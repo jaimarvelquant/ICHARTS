@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Charts Hub - Main Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(26, 26, 46, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00ff88, #00ccff, #ff8800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            color: #cccccc;
+            opacity: 0.9;
+        }
+
+        .chart-selection-section {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-selection-section h2 {
+            color: #00ff88;
+            font-size: 2rem;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .chart-type-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .chart-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-align: left;
+            min-height: 180px;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .chart-card:hover::before {
+            left: 100%;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: #00ff88;
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.2);
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(0, 255, 136, 0.05) 100%);
+        }
+
+        .chart-card-icon {
+            font-size: 3rem;
+            color: #00ff88;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .chart-card:hover .chart-card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .chart-card-content {
+            flex: 1;
+        }
+
+        .chart-card-content h3 {
+            color: #ffffff;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-card-content p {
+            color: #cccccc;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .chart-card-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .feature-tag {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .chart-card:hover .feature-tag {
+            background: rgba(0, 255, 136, 0.3);
+            transform: scale(1.05);
+        }
+
+        .chart-card-arrow {
+            font-size: 2rem;
+            color: #00ff88;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .chart-card:hover .chart-card-arrow {
+            opacity: 1;
+            transform: translateX(10px);
+        }
+
+
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            color: #cccccc;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .chart-type-cards {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .chart-card {
+                flex-direction: column;
+                text-align: center;
+                padding: 25px;
+            }
+            
+            .chart-card-icon {
+                font-size: 3rem;
+            }
+            
+            .chart-card-content h3 {
+                font-size: 1.5rem;
+            }
+            
+            .chart-card-content p {
+                font-size: 0.9rem;
+            }
+            
+            .chart-card-arrow {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Trading Charts Hub</h1>
+            <p>Comprehensive Market Analysis Platform</p>
+        </div>
+
+        <div class="chart-selection-section">
+            <h2>Select Chart Type</h2>
+            <div class="chart-type-cards">
+                <div class="chart-card" onclick="navigateToChart('single_chart')">
+                    <div class="chart-card-icon">
+                        📊
+                    </div>
+                    <div class="chart-card-content">
+                        <h3>Single Chart</h3>
+                        <p>Detailed analysis of individual instruments with multiple timeframes and chart types</p>
+                        <div class="chart-card-features">
+                            <span class="feature-tag">Multiple Timeframes</span>
+                            <span class="feature-tag">Interactive Charts</span>
+                            <span class="feature-tag">Real-time Data</span>
+                        </div>
+                    </div>
+                    <div class="chart-card-arrow">
+                        →
+                    </div>
+                </div>
+                
+                <div class="chart-card" onclick="navigateToChart('straddle_chart')">
+                    <div class="chart-card-icon">
+                        🎯
+                    </div>
+                    <div class="chart-card-content">
+                        <h3>Straddle Chart</h3>
+                        <p>Advanced options strategy analysis combining call and put positions for volatility trading</p>
+                        <div class="chart-card-features">
+                            <span class="feature-tag">Options Strategy</span>
+                            <span class="feature-tag">Volatility Analysis</span>
+                            <span class="feature-tag">Risk Management</span>
+                        </div>
+                    </div>
+                    <div class="chart-card-arrow">
+                        →
+                    </div>
+                </div>
+
+                <div class="chart-card" onclick="navigateToChart('options_chain')">
+                    <div class="chart-card-icon">
+                        ⛓️
+                    </div>
+                    <div class="chart-card-content">
+                        <h3>Options Chain</h3>
+                        <p>Comprehensive options chain analysis with real-time strike prices, volumes, and Greeks</p>
+                        <div class="chart-card-features">
+                            <span class="feature-tag">Strike Analysis</span>
+                            <span class="feature-tag">Greeks Calculation</span>
+                            <span class="feature-tag">Volume Profile</span>
+                        </div>
+                    </div>
+                    <div class="chart-card-arrow">
+                        →
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="footer">
+            <p>&copy; 2024 Trading Charts Hub. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        function navigateToChart(chartType) {
+            // Add a small delay for visual feedback
+            const card = event.currentTarget;
+            card.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                if (chartType === 'single_chart') {
+                    // Redirect directly to the single chart page
+                    window.location.href = '/single_chart';
+                } else if (chartType === 'straddle_chart') {
+                    // Redirect to the straddle chart page
+                    window.location.href = '/straddle_chart';
+                } else if (chartType === 'options_chain') {
+                    // Redirect to the options chain page
+                    window.location.href = '/options_chain';
+                }
+            }, 150);
+        }
+
+        // Add click animation effect
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.chart-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mousedown', function() {
+                    this.style.transform = 'scale(0.95)';
+                });
+                
+                card.addEventListener('mouseup', function() {
+                    this.style.transform = '';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = '';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

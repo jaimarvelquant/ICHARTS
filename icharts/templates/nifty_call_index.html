@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIFTY Call Options Chart Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            border: 1px solid #444444;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #444444;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #444444;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #cccccc;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #444444;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #00aaff;
+            box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.2);
+        }
+
+        .form-text {
+            color: #888888;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #00aaff 0%, #0088cc 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #00aaff;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 170, 255, 0.4);
+            background: linear-gradient(135deg, #00ccff 0%, #00aaff 100%);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #666666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .chart-container {
+            padding: 30px;
+            text-align: center;
+            background: #1a1a1a;
+        }
+
+        .chart-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin: 20px 0;
+            border: 1px solid #444444;
+        }
+
+        .chart-info {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+            border: 1px solid #444444;
+        }
+
+        .chart-info h3 {
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #444444;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00aaff;
+        }
+
+        .stat-label {
+            color: #cccccc;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .timeframe-info {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444444;
+        }
+
+        .timeframe-info h4 {
+            color: #00aaff;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .timeframe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .timeframe-item {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #444444;
+            text-align: center;
+        }
+
+        .timeframe-label {
+            color: #cccccc;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .timeframe-value {
+            color: #00ff88;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .strike-info {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #444444;
+            margin-top: 15px;
+        }
+
+        .strike-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffaa00;
+        }
+
+        .strike-label {
+            color: #cccccc;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* OHLC Tooltip Styles */
+        .ohlc-tooltip {
+            position: absolute;
+            background: #2a2a2a;
+            border: 1px solid #444444;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            min-width: 200px;
+            pointer-events: none;
+        }
+
+        .tooltip-header {
+            color: #00aaff;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid #444444;
+            padding-bottom: 5px;
+        }
+
+        .tooltip-content {
+            color: #ffffff;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .tooltip-label {
+            color: #cccccc;
+            font-weight: 500;
+        }
+
+        .tooltip-value {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                padding: 20px;
+            }
+            
+            .chart-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 NIFTY Call Options • Chart Generator</h1>
+            <p>Professional trading platform for NIFTY Call Options OHLC data analysis</p>
+        </div>
+
+        <div class="controls">
+            <div class="form-group">
+                <label for="dateInput">Select Date:</label>
+                <select id="dateInput" class="form-control">
+                    <option value="">Choose a date...</option>
+                    {% for date in dates %}
+                    <option value="{{ date }}">{{ date }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-text">Select a date to see available strike prices</small>
+            </div>
+
+            <div class="form-group">
+                <label for="strikeInput">Select Strike Price:</label>
+                <select id="strikeInput" class="form-control" disabled>
+                    <option value="">Choose strike price...</option>
+                </select>
+                <small class="form-text">Select a strike price to see available expiry dates</small>
+            </div>
+
+            <div class="form-group">
+                <label for="expiryInput">Select Expiry Date:</label>
+                <select id="expiryInput" class="form-control" disabled>
+                    <option value="">Choose expiry date...</option>
+                </select>
+                <small class="form-text">Select an expiry date to generate the chart</small>
+            </div>
+
+            <div class="form-group">
+                <label for="timeframeSelect">Time Interval:</label>
+                <select id="timeframeSelect" class="form-control">
+                    <option value="1">1 Minute</option>
+                    <option value="2">2 Minutes</option>
+                    <option value="3">3 Minutes</option>
+                    <option value="4">4 Minutes</option>
+                    <option value="5">5 Minutes</option>
+                    <option value="6">6 Minutes</option>
+                    <option value="7">7 Minutes</option>
+                    <option value="8">8 Minutes</option>
+                    <option value="9">9 Minutes</option>
+                    <option value="10">10 Minutes</option>
+                    <option value="11">11 Minutes</option>
+                    <option value="12">12 Minutes</option>
+                    <option value="13">13 Minutes</option>
+                    <option value="14">14 Minutes</option>
+                    <option value="15">15 Minutes</option>
+                </select>
+                <small class="form-text">Select the time interval for candlestick formation</small>
+            </div>
+
+            <div class="form-group">
+                <button type="button" class="btn" onclick="generateCallChart()" id="generateBtn" disabled>
+                    📊 Generate Call Option Chart
+                </button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generating call option chart... Please wait...</p>
+        </div>
+
+        <div class="chart-container" id="chartContainer" style="display: none;">
+            <h2 id="chartTitle"></h2>
+            <div id="chartImage"></div>
+            
+            <!-- Interactive Chart Container -->
+            <div id="interactiveChartContainer" style="display: none;">
+                <div id="candlestickChart" style="height: 500px; width: 100%; margin: 20px 0;"></div>
+            </div>
+            
+            <!-- Custom OHLC Tooltip -->
+            <div id="ohlcTooltip" class="ohlc-tooltip" style="display: none;">
+                <div class="tooltip-header">OHLC Data</div>
+                <div class="tooltip-content">
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Time:</span>
+                        <span class="tooltip-value" id="tooltipTime">-</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Open:</span>
+                        <span class="tooltip-value" id="tooltipOpen">-</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">High:</span>
+                        <span class="tooltip-value" id="tooltipHigh">-</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Low:</span>
+                        <span class="tooltip-value" id="tooltipLow">-</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Close:</span>
+                        <span class="tooltip-value" id="tooltipClose">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-info">
+                <h3>📋 Chart Information</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="recordCount">-</div>
+                        <div class="stat-label">Data Points</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="strikePrice">-</div>
+                        <div class="stat-label">Strike Price</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="expiryDate">-</div>
+                        <div class="stat-label">Expiry Date</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="generatedAt">-</div>
+                        <div class="stat-label">Generated At</div>
+                    </div>
+                </div>
+                
+                <!-- Time Frame Information -->
+                <div class="timeframe-info">
+                    <h4>⏰ Trading Time Frame</h4>
+                    <div class="timeframe-grid">
+                        <div class="timeframe-item">
+                            <div class="timeframe-label">Market Open:</div>
+                            <div class="timeframe-value" id="marketOpen">-</div>
+                        </div>
+                        <div class="timeframe-item">
+                            <div class="timeframe-label">Market Close:</div>
+                            <div class="timeframe-value" id="marketClose">-</div>
+                        </div>
+                        <div class="timeframe-item">
+                            <div class="timeframe-label">Trading Duration:</div>
+                            <div class="timeframe-value" id="tradingDuration">-</div>
+                        </div>
+                        <div class="timeframe-item">
+                            <div class="timeframe-label">Data Intervals:</div>
+                            <div class="timeframe-value" id="dataIntervals">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorContainer"></div>
+    </div>
+
+    <!-- TradingView LightweightCharts Library -->
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <script>
+        // Fallback if first CDN fails
+        if (typeof LightweightCharts === 'undefined') {
+            console.log('First CDN failed, trying alternative...');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';
+            script.onload = function() {
+                console.log('Alternative CDN loaded successfully');
+            };
+            script.onerror = function() {
+                console.error('All CDNs failed to load');
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+    <script>
+        let currentChart = null;
+        
+        // Check if the chart library loaded properly
+        function checkChartLibrary() {
+            if (typeof LightweightCharts === 'undefined') {
+                console.error('TradingView Lightweight Charts library failed to load');
+                return false;
+            }
+            return true;
+        }
+
+        // Event listeners
+        document.getElementById('dateInput').addEventListener('change', function() {
+            const selectedDate = this.value;
+            const strikeInput = document.getElementById('strikeInput');
+            const expiryInput = document.getElementById('expiryInput');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (selectedDate) {
+                // Enable strike input and fetch available strikes
+                strikeInput.disabled = false;
+                fetchStrikes(selectedDate);
+            } else {
+                // Disable strike input and generate button
+                strikeInput.disabled = true;
+                generateBtn.disabled = true;
+                strikeInput.innerHTML = '<option value="">Choose strike price...</option>';
+                expiryInput.innerHTML = '<option value="">Choose expiry date...</option>';
+            }
+        });
+
+        document.getElementById('strikeInput').addEventListener('change', function() {
+            const selectedStrike = this.value;
+            const dateInput = document.getElementById('dateInput');
+            const selectedDate = dateInput.value;
+            const expiryInput = document.getElementById('expiryInput');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (selectedStrike) {
+                expiryInput.disabled = false;
+                fetchExpiries(selectedDate, selectedStrike);
+            } else {
+                expiryInput.disabled = true;
+                generateBtn.disabled = true;
+                expiryInput.innerHTML = '<option value="">Choose expiry date...</option>';
+            }
+        });
+
+        document.getElementById('expiryInput').addEventListener('change', function() {
+            const selectedExpiry = this.value;
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (selectedExpiry) {
+                generateBtn.disabled = false;
+            } else {
+                generateBtn.disabled = true;
+            }
+        });
+
+        function fetchStrikes(date) {
+            const strikeInput = document.getElementById('strikeInput');
+            strikeInput.innerHTML = '<option value="">Loading strikes...</option>';
+            
+            fetch(`/get_strikes/${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    strikeInput.innerHTML = '<option value="">Choose strike price...</option>';
+                    
+                    if (data.strikes && data.strikes.length > 0) {
+                        data.strikes.forEach(strike => {
+                            const option = document.createElement('option');
+                            option.value = strike;
+                            option.textContent = strike.toFixed(2);
+                            strikeInput.appendChild(option);
+                        });
+                    } else {
+                        strikeInput.innerHTML = '<option value="">No strikes available</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching strikes:', error);
+                    strikeInput.innerHTML = '<option value="">Error loading strikes</option>';
+                });
+        }
+
+        function fetchExpiries(date, strike) {
+            const expiryInput = document.getElementById('expiryInput');
+            expiryInput.innerHTML = '<option value="">Loading expiries...</option>';
+            
+            fetch(`/get_expiries/${date}/${strike}`)
+                .then(response => response.json())
+                .then(data => {
+                    expiryInput.innerHTML = '<option value="">Choose expiry date...</option>';
+                    
+                    if (data.expiries && data.expiries.length > 0) {
+                        data.expiries.forEach(expiry => {
+                            const option = document.createElement('option');
+                            option.value = expiry;
+                            option.textContent = expiry;
+                            expiryInput.appendChild(option);
+                        });
+                    } else {
+                        expiryInput.innerHTML = '<option value="">No expiries available</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching expiries:', error);
+                    expiryInput.innerHTML = '<option value="">Error loading expiries</option>';
+                });
+        }
+
+        function generateCallChart() {
+            const dateInput = document.getElementById('dateInput');
+            const strikeInput = document.getElementById('strikeInput');
+            const expiryInput = document.getElementById('expiryInput');
+            const timeframeSelect = document.getElementById('timeframeSelect');
+            const selectedDate = dateInput.value;
+            const selectedStrike = strikeInput.value;
+            const selectedExpiry = expiryInput.value;
+            const selectedTimeframe = timeframeSelect.value;
+            
+            if (!selectedDate || !selectedStrike || !selectedExpiry) {
+                showError('Please select all required fields (Date, Strike Price, Expiry Date).');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('chartContainer').style.display = 'none';
+            hideError();
+
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('date', selectedDate);
+            formData.append('strike', selectedStrike);
+            formData.append('expiry', selectedExpiry);
+            formData.append('timeframe', selectedTimeframe);
+
+            // Make API call
+            fetch('/generate_call_chart', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.success) {
+                    displayInteractiveChart(data);
+                } else {
+                    showError(data.error || 'Failed to generate call option chart');
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                showError('Network error: ' + error.message);
+            });
+        }
+
+        function displayInteractiveChart(data) {
+            const container = document.getElementById('chartContainer');
+            const title = document.getElementById('chartTitle');
+            const recordCount = document.getElementById('recordCount');
+            const strikePrice = document.getElementById('strikePrice');
+            const expiryDate = document.getElementById('expiryDate');
+            const generatedAt = document.getElementById('generatedAt');
+
+            // Set title
+            title.textContent = data.chart_title;
+
+            // Set stats
+            recordCount.textContent = data.record_count;
+            strikePrice.textContent = data.strike;
+            expiryDate.textContent = data.expiry;
+            generatedAt.textContent = new Date().toLocaleTimeString();
+            
+            // Set time frame information
+            if (data.time_frame) {
+                document.getElementById('marketOpen').textContent = data.time_frame.market_open;
+                document.getElementById('marketClose').textContent = data.time_frame.market_close;
+                document.getElementById('tradingDuration').textContent = data.time_frame.trading_duration;
+                document.getElementById('dataIntervals').textContent = data.time_frame.data_intervals;
+            }
+
+            // Check if chart library is available
+            if (!checkChartLibrary()) {
+                console.log('Chart library not available, falling back to static chart');
+                // Fall back to static chart
+                const chartDiv = document.getElementById('chartImage');
+                chartDiv.innerHTML = `<img src="data:image/png;base64,${data.chart_base64}" alt="${data.chart_title}" class="chart-image">`;
+                document.getElementById('interactiveChartContainer').style.display = 'none';
+                container.style.display = 'block';
+                container.scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+
+            // Hide static chart and show interactive chart
+            document.getElementById('chartImage').style.display = 'none';
+            document.getElementById('interactiveChartContainer').style.display = 'block';
+
+            // Show container
+            container.style.display = 'block';
+
+            // Create interactive candlestick chart
+            try {
+                createInteractiveCandlestickChart(data);
+            } catch (error) {
+                console.error('Error creating interactive chart:', error);
+                // Fall back to static chart
+                document.getElementById('chartImage').style.display = 'block';
+                document.getElementById('interactiveChartContainer').style.display = 'none';
+                const chartDiv = document.getElementById('chartImage');
+                chartDiv.innerHTML = `<img src="data:image/png;base64,${data.chart_base64}" alt="${data.chart_title}" class="chart-image">`;
+                showError('Interactive chart failed to load. Showing static chart instead.');
+            }
+
+            // Scroll to chart
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createInteractiveCandlestickChart(data) {
+            console.log('Creating interactive candlestick chart with data:', data);
+            
+            // Check if library is available
+            if (typeof LightweightCharts === 'undefined') {
+                throw new Error('LightweightCharts library not available');
+            }
+            
+            // Destroy existing chart if it exists
+            if (currentChart) {
+                currentChart.remove();
+                currentChart = null;
+            }
+
+            // Create the chart container
+            const chartContainer = document.getElementById('candlestickChart');
+            if (!chartContainer) {
+                throw new Error('Chart container not found');
+            }
+            
+            console.log('Creating chart with LightweightCharts...');
+            // Create the chart
+            const chart = LightweightCharts.createChart(chartContainer, {
+                width: chartContainer.clientWidth,
+                height: 500,
+                layout: {
+                    background: { color: '#1a1a1a' },
+                    textColor: '#cccccc',
+                },
+                grid: {
+                    vertLines: { color: '#444444', alpha: 0.1 },
+                    horzLines: { color: '#444444', alpha: 0.1 },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                    vertLine: {
+                        color: '#00aaff',
+                        width: 1,
+                        style: 3,
+                        labelBackgroundColor: '#00aaff',
+                    },
+                    horzLine: {
+                        color: '#00aaff',
+                        width: 1,
+                        style: 3,
+                        labelBackgroundColor: '#00aaff',
+                    },
+                },
+                rightPriceScale: {
+                    borderColor: '#444444',
+                    textColor: '#cccccc',
+                },
+                timeScale: {
+                    borderColor: '#444444',
+                    textColor: '#cccccc',
+                    timeVisible: true,
+                    secondsVisible: false,
+                    // TradingView-style time formatting
+                    tickMarkFormatter: (time) => {
+                        const date = new Date(time * 1000);
+                        const hours = date.getHours().toString().padStart(2, '0');
+                        const minutes = date.getMinutes().toString().padStart(2, '0');
+                        
+                        // Show date for first tick and time for others
+                        if (time === candlestickData[0].time) {
+                            const day = date.getDate();
+                            const month = date.toLocaleDateString('en-US', { month: 'short' });
+                            const year = date.getFullYear().toString().slice(-2);
+                            return `${day} ${month} '${year}`;
+                        }
+                        return `${hours}:${minutes}`;
+                    },
+                    // Better time intervals
+                    rightOffset: 12,
+                    barSpacing: 3,
+                    minBarSpacing: 1,
+                    // Professional appearance
+                    borderVisible: true,
+                    fixLeftEdge: true,
+                    fixRightEdge: true,
+                },
+                // Remove any extra padding and margins for cleaner look
+                leftPriceScale: {
+                    visible: false,
+                },
+                // Professional chart appearance
+                watermark: {
+                    visible: false,
+                },
+                // Better crosshair behavior
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                    vertLine: {
+                        color: '#00aaff',
+                        width: 1,
+                        style: 3,
+                        labelBackgroundColor: '#00aaff',
+                        labelTextColor: '#ffffff',
+                    },
+                    horzLine: {
+                        color: '#00aaff',
+                        width: 1,
+                        style: 3,
+                        labelBackgroundColor: '#00aaff',
+                        labelTextColor: '#ffffff',
+                    },
+                },
+            });
+
+            // Create candlestick series with clean styling
+            const candlestickSeries = chart.addCandlestickSeries({
+                upColor: '#00ff88',
+                downColor: '#ff4444',
+                borderDownColor: '#ff4444',
+                borderUpColor: '#00ff88',
+                wickDownColor: '#ff4444',
+                wickUpColor: '#00ff88',
+                // Cleaner appearance
+                borderVisible: false,
+                wickThickness: 1,
+            });
+
+            // Prepare data for the chart with proper timestamps
+            const candlestickData = data.chart_data.map((candle, index) => {
+                // Convert time string to timestamp (assuming format HH:MM:SS)
+                const timeParts = candle.time.split(':');
+                const hours = parseInt(timeParts[0]);
+                const minutes = parseInt(timeParts[1]);
+                const seconds = parseInt(timeParts[2]);
+                
+                // Get the selected date from the date input
+                const dateInput = document.getElementById('dateInput');
+                const selectedDate = dateInput.value; // Format: YYYY-MM-DD
+                
+                // Create a timestamp for the selected date with the given time
+                const selectedDateTime = new Date(selectedDate + 'T' + candle.time);
+                
+                return {
+                    time: Math.floor(selectedDateTime.getTime() / 1000), // Unix timestamp
+                    open: candle.open,
+                    high: candle.high,
+                    low: candle.low,
+                    close: candle.close
+                };
+            });
+
+            // Set the data
+            candlestickSeries.setData(candlestickData);
+
+            // Handle window resize
+            const resizeObserver = new ResizeObserver(entries => {
+                if (entries.length === 0 || entries[0].target !== chartContainer) { return; }
+                const newRect = entries[0].contentRect;
+                chart.applyOptions({ height: newRect.height, width: newRect.width });
+            });
+
+            resizeObserver.observe(chartContainer);
+
+            // Store reference to current chart
+            currentChart = chart;
+
+            // Add tooltip for OHLC values
+            chart.subscribeCrosshairMove(param => {
+                const tooltip = document.getElementById('ohlcTooltip');
+                
+                if (param.time !== undefined) {
+                    const data = param.seriesData.get(candlestickSeries);
+                    if (data) {
+                        // Find the corresponding candle data
+                        const timestamp = param.time;
+                        const candleIndex = candlestickData.findIndex(candle => candle.time === timestamp);
+                        
+                        if (candleIndex >= 0 && candleIndex < candlestickData.length) {
+                            const candle = candlestickData[candleIndex];
+                            
+                            // Format time for tooltip (TradingView style)
+                            const date = new Date(timestamp * 1000);
+                            const day = date.getDate();
+                            const month = date.toLocaleDateString('en-US', { month: 'short' });
+                            const year = date.getFullYear().toString().slice(-2);
+                            const formattedTime = `${day} ${month} '${year} ${date.toLocaleTimeString('en-US', {
+                                hour12: false,
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            })}`;
+                            
+                            // Update tooltip content
+                            document.getElementById('tooltipTime').textContent = formattedTime;
+                            document.getElementById('tooltipOpen').textContent = candle.open.toFixed(2);
+                            document.getElementById('tooltipHigh').textContent = candle.high.toFixed(2);
+                            document.getElementById('tooltipLow').textContent = candle.low.toFixed(2);
+                            document.getElementById('tooltipClose').textContent = candle.close.toFixed(2);
+                            
+                            // Show tooltip
+                            tooltip.style.display = 'block';
+                            
+                            // Position tooltip away from cursor for better visibility
+                            const rect = chartContainer.getBoundingClientRect();
+                            const tooltipWidth = 200; // Approximate tooltip width
+                            const tooltipHeight = 120; // Approximate tooltip height
+                            
+                            // Position tooltip to the right of cursor, or left if too close to edge
+                            let leftPosition = param.point.x + 20;
+                            if (leftPosition + tooltipWidth > chartContainer.clientWidth) {
+                                leftPosition = param.point.x - tooltipWidth - 20;
+                            }
+                            
+                            // Position tooltip above cursor, or below if too close to top
+                            let topPosition = param.point.y - tooltipHeight - 10;
+                            if (topPosition < 0) {
+                                topPosition = param.point.y + 20;
+                            }
+                            
+                            const x = leftPosition + rect.left;
+                            const y = topPosition + rect.top;
+                            
+                            tooltip.style.left = Math.max(rect.left + 10, x) + 'px';
+                            tooltip.style.top = Math.max(rect.top + 10, y) + 'px';
+                        }
+                    }
+                } else {
+                    // Hide tooltip when not hovering
+                    tooltip.style.display = 'none';
+                }
+            });
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `<div class="error">❌ ${message}</div>`;
+            errorContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideError() {
+            document.getElementById('errorContainer').innerHTML = '';
+        }
+
+        // Refresh dates when page loads
+        window.addEventListener('load', function() {
+            fetch('/get_dates')
+                .then(response => response.json())
+                .then(data => {
+                    const dateSelect = document.getElementById('dateInput');
+                    dateSelect.innerHTML = '<option value="">Choose a date...</option>';
+                    
+                    data.dates.forEach(date => {
+                        const option = document.createElement('option');
+                        option.value = date;
+                        option.textContent = date;
+                        dateSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Failed to load dates:', error);
+                });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,2682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Charts Hub - Single Chart Analysis</title>
+    
+    <!-- LightweightCharts Library for Interactive Charts -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <script>
+        // Check if library loaded successfully and provide fallback
+        window.addEventListener('load', function() {
+            if (typeof LightweightCharts === 'undefined') {
+                console.error('Primary LightweightCharts library failed to load, trying fallback...');
+                
+                // Try fallback CDN
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';
+                fallbackScript.onload = function() {
+                    if (typeof LightweightCharts !== 'undefined') {
+                        console.log('Fallback LightweightCharts library loaded successfully');
+                        console.log('Library version:', LightweightCharts.version);
+                        console.log('Available methods:', Object.getOwnPropertyNames(LightweightCharts));
+                    } else {
+                        console.error('Both primary and fallback libraries failed to load');
+                        console.warn('Interactive charts will not be available. Please check your internet connection.');
+                    }
+                };
+                fallbackScript.onerror = function() {
+                    console.error('Fallback library also failed to load');
+                };
+                document.head.appendChild(fallbackScript);
+            } else {
+                console.log('Primary LightweightCharts library loaded successfully');
+                console.log('Library version:', LightweightCharts.version);
+                console.log('Available methods:', Object.getOwnPropertyNames(LightweightCharts));
+            }
+        });
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(26, 26, 46, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 0;
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #00ccff, #0099cc);
+            border: none;
+            border-radius: 25px;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 204, 255, 0.3);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 204, 255, 0.4);
+            background: linear-gradient(45deg, #0099cc, #00ccff);
+        }
+
+        .chart-icon {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            margin-right: 10px;
+            position: relative;
+            vertical-align: middle;
+            background: linear-gradient(135deg, #e0e0e0, #f5f5f5);
+            border-radius: 5px;
+            border: 2px solid #d0d0d0;
+        }
+
+        .chart-icon::before {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 3px;
+            right: 3px;
+            height: 18px;
+            background: 
+                linear-gradient(to top, #4CAF50 0%, #4CAF50 40%, transparent 40%),
+                linear-gradient(to top, #2196F3 0%, #2196F3 70%, transparent 70%) 5px 0,
+                linear-gradient(to top, #FF5722 0%, #FF5722 55%, transparent 55%) 10px 0,
+                linear-gradient(to top, #9C27B0 0%, #9C27B0 85%, transparent 85%) 15px 0;
+            background-size: 4px 100%;
+            background-repeat: no-repeat;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #00ff88, #00ccff, #ff8800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: #cccccc;
+            opacity: 0.9;
+        }
+
+        .controls-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #00ff88;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 8px 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .control-group select option {
+            background: #1a1a2e;
+            color: #ffffff;
+            padding: 10px;
+        }
+        
+        .form-text {
+            margin-top: 5px;
+            font-size: 0.85rem;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+            display: block;
+        }
+        
+        .form-text:hover {
+            opacity: 1;
+        }
+        
+        .timeframe-display {
+            margin-top: 8px;
+            text-align: center;
+        }
+        
+        .timeframe-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #1a1a2e;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .generate-btn {
+            grid-column: 1 / -1;
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            border: none;
+            border-radius: 10px;
+            color: #1a1a2e;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0, 255, 136, 0.4);
+            background: linear-gradient(45deg, #00cc66, #00ff88);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .chart-section {
+            margin-top: 40px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 400px;
+        }
+
+        .chart-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .chart-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-info h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .info-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-item .label {
+            font-size: 0.9rem;
+            color: #cccccc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .info-item .value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #00ff88;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #00ff88;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            display: none;
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid rgba(255, 68, 68, 0.5);
+            color: #ff4444;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .data-type-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #1a1a2e;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-left: 15px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            color: #cccccc;
+            opacity: 0.7;
+        }
+        
+        /* OHLC Tooltip Styles */
+        .ohlc-tooltip {
+            position: absolute;
+            background: rgba(42, 42, 42, 0.95);
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #ffffff;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.1s ease;
+            transform-origin: center;
+            max-width: 200px;
+            /* Position relative to chart container */
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .ohlc-tooltip:hover {
+            transform: scale(1.02);
+        }
+        
+        .tooltip-header {
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 8px;
+            text-align: center;
+            border-bottom: 1px solid #00ff88;
+            padding-bottom: 4px;
+        }
+        
+        .tooltip-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        
+        .tooltip-label {
+            color: #cccccc;
+            min-width: 40px;
+        }
+        
+        .tooltip-value {
+            color: #ffffff;
+            font-weight: bold;
+        }
+        
+        /* Interactive Chart Container */
+        #interactiveChartContainer {
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative; /* Added for tooltip positioning */
+        }
+        
+        /* Interactive Chart Button */
+        .interactive-btn {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+        }
+        
+        .interactive-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .timeframe-display {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 204, 255, 0.1);
+            border: 1px solid rgba(0, 204, 255, 0.3);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .timeframe-badge {
+            color: #00ccff;
+            font-weight: 600;
+        }
+
+        /* Date Selector Styles */
+        .date-selector-container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .date-info-section {
+            margin: 15px 0 20px 0;
+        }
+
+        .date-range-info {
+            display: block;
+            text-align: left;
+            padding: 10px 15px;
+            background: rgba(0, 255, 136, 0.15);
+            border: 2px solid rgba(0, 255, 136, 0.4);
+            border-radius: 8px;
+            color: #00ff88;
+            font-weight: 500;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2);
+            backdrop-filter: blur(10px);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .date-range-info small {
+            line-height: 1.4;
+            font-size: 0.9rem;
+        }
+
+        .weekend-message {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .date-inputs select option:disabled {
+            color: #666;
+            font-style: italic;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .date-inputs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            justify-content: space-between;
+        }
+
+        .date-inputs select {
+            flex: 1;
+            max-width: 32%;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .date-inputs select:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .date-inputs select:focus {
+            outline: none;
+            border-color: #00ccff;
+            box-shadow: 0 0 0 2px rgba(0, 204, 255, 0.3);
+        }
+
+        .date-navigation {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            padding: 6px 12px;
+            background: linear-gradient(45deg, #00ccff, #0099cc);
+            border: none;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 50px;
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(45deg, #0099cc, #00ccff);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 204, 255, 0.3);
+        }
+
+        .nav-btn:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .date-inputs {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .date-navigation {
+                flex-direction: row;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-top">
+                <button class="back-btn" onclick="goBack()">← Back to Main</button>
+                <h1><span class="chart-icon"></span> Single Chart Analysis</h1>
+            </div>
+            <p>Detailed analysis of individual instruments with multiple timeframes and chart types</p>
+            <div class="data-type-indicator" id="currentDataType">
+                {% if selected_data_type == 'nifty_cash' or selected_data_type == 'banknifty_cash' %}Spot
+                {% elif selected_data_type == 'nifty_future' or selected_data_type == 'banknifty_future' %}Future
+                {% elif selected_data_type == 'nifty_call' or selected_data_type == 'banknifty_call' %}Call
+                {% elif selected_data_type == 'nifty_put' or selected_data_type == 'banknifty_put' %}Put
+                {% else %}{{ selected_data_type.replace('_', ' ').title() }}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Date Range Information Section -->
+        <div class="date-info-section">
+            <div class="date-range-info" id="dateRangeInfo">
+                <small>Loading date range...</small>
+            </div>
+        </div>
+
+        <div class="controls-section">
+            <div class="control-group">
+                <label for="symbolSelect">Symbol</label>
+                <select id="symbolSelect" onchange="onSymbolChange()">
+                    <option value="">Choose a symbol...</option>
+                    <option value="nifty" {% if selected_symbol == 'nifty' %}selected{% endif %}>Nifty</option>
+                    <option value="banknifty" {% if selected_symbol == 'banknifty' %}selected{% endif %}>Bank Nifty</option>
+                    <option value="midcpnifty" {% if selected_symbol == 'midcpnifty' %}selected{% endif %}>Midcap Nifty</option>
+                    <option value="sensex" {% if selected_symbol == 'sensex' %}selected{% endif %}>Sensex</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="dataType">Data Type</label>
+                <select id="dataType" onchange="changeDataType(this.value)">
+                    {% for data_type in data_types %}
+                        {% if data_type == 'nifty_cash' or data_type == 'banknifty_cash' or data_type == 'midcpnifty_cash' or data_type == 'sensex_cash' %}
+                            <option value="{{ data_type }}" {% if selected_data_type == data_type %}selected{% endif %}>Spot</option>
+                        {% elif data_type == 'nifty_future' or data_type == 'banknifty_future' or data_type == 'midcpnifty_future' or data_type == 'sensex_future' %}
+                            <option value="{{ data_type }}" {% if selected_data_type == data_type %}selected{% endif %}>Future</option>
+                        {% elif data_type == 'nifty_call' or data_type == 'banknifty_call' or data_type == 'midcpnifty_call' or data_type == 'sensex_call' %}
+                            <option value="{{ data_type }}" {% if selected_data_type == data_type %}selected{% endif %}>Call</option>
+                        {% elif data_type == 'nifty_put' or data_type == 'banknifty_put' or data_type == 'midcpnifty_put' or data_type == 'sensex_put' %}
+                            <option value="{{ data_type }}" {% if selected_data_type == data_type %}selected{% endif %}>Put</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="dateSelect">Select Date</label>
+                <div class="date-selector-container">
+                    <div class="date-inputs">
+                        <select id="yearSelect" onchange="updateDateOptions(); updateDebugDisplay();">
+                            <option value="">Year</option>
+                        </select>
+                        <select id="monthSelect" onchange="onMonthChange()">
+                            <option value="">Month</option>
+                        </select>
+                        <select id="daySelect" onchange="onDateChange(); updateDebugDisplay();">
+                            <option value="">Day</option>
+                        </select>
+                    </div>
+                    <div class="date-navigation">
+                        <button type="button" class="nav-btn" onclick="navigateDate(-1)" title="Previous Date">◀</button>
+                        <button type="button" class="nav-btn" onclick="navigateDate(1)" title="Next Date">▶</button>
+                    </div>
+                    <div class="date-debug" id="dateDebug" style="margin-top: 10px; text-align: center; font-size: 12px; color: #00ccff;">
+                        <small>Debug: Year: <span id="debugYear">-</span> | Month: <span id="debugMonth">-</span> | Day: <span id="debugDay">-</span></small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strike Price dropdown (only for options) -->
+            <div class="control-group" id="strikeGroup" style="display: none;">
+                <label for="strikeSelect">Strike Price</label>
+                <select id="strikeSelect" onchange="onStrikeChange()">
+                    <option value="">Choose strike price...</option>
+                </select>
+            </div>
+
+            <!-- Expiry Date dropdown (only for options) -->
+            <div class="control-group" id="expiryGroup" style="display: none;">
+                <label for="expirySelect">Expiry Date</label>
+                <select id="expirySelect">
+                    <option value="">Choose expiry date...</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="chartType">Chart Type</label>
+                <select id="chartType">
+                    <option value="candlestick">Candlestick Chart</option>
+                    <option value="summary">Summary Chart</option>
+                </select>
+            </div>
+
+                          <div class="control-group">
+                  <label for="timeframe">Timeframe (minutes)</label>
+                  <input type="number" id="timeframe" value="1" min="1" max="60" step="1" onchange="updateTimeframeDisplay()">
+                  <small class="form-text" id="timeframeInfo">Select time interval for candlestick formation</small>
+                  <div class="timeframe-display" id="timeframeDisplay" style="display: none;">
+                      <span class="timeframe-badge">Selected: <strong id="selectedTimeframe">1</strong> min</span>
+                  </div>
+              </div>
+
+            <button class="generate-btn" onclick="generateChart()">
+                Generate Chart
+            </button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Generating chart... Please wait.</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        
+        <!-- Interactive Chart Error Message -->
+        <div class="error-message" id="interactiveChartError" style="display: none;">
+            <p><strong>Interactive chart failed to load:</strong> This could be due to:</p>
+            <ul style="text-align: left; margin: 10px 0; padding-left: 20px;">
+                <li>Internet connection issues</li>
+                <li>Chart library not loading properly</li>
+                <li>Browser compatibility issues</li>
+            </ul>
+            <p>The static chart is still available for analysis.</p>
+            <button onclick="retryInteractiveChart()" class="generate-btn" style="margin-top: 10px; padding: 8px 16px; font-size: 0.9rem;">
+                🔄 Retry Interactive Chart
+            </button>
+        </div>
+
+        <div class="chart-section" id="chartSection" style="display: none;">
+            <div class="chart-container">
+                <img id="chartImage" class="chart-image" alt="Generated Chart">
+                
+                <!-- Interactive Chart Container -->
+                <div id="interactiveChartContainer" style="display: none;">
+                    <div id="candlestickChart" style="width: 100%; height: 500px;"></div>
+                    
+                    <!-- OHLC Tooltip for Interactive Chart -->
+                    <div id="ohlcTooltip" class="ohlc-tooltip" style="display: none;">
+                        <div class="tooltip-header">OHLC Data</div>
+                        <div class="tooltip-content">
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Time:</span>
+                                <span id="tooltipTime" class="tooltip-value">--</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Open:</span>
+                                <span id="tooltipOpen" class="tooltip-value">--</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">High:</span>
+                                <span id="tooltipHigh" class="tooltip-value">--</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Low:</span>
+                                <span id="tooltipLow" class="tooltip-value">--</span>
+                            </div>
+                            <div class="tooltip-row">
+                                <span class="tooltip-label">Close:</span>
+                                <span id="tooltipClose" class="tooltip-value">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Remove the old tooltip location -->
+            </div>
+            
+            <div class="chart-info">
+                <h3 id="chartTitle">Chart Information</h3>
+                <div class="info-grid" id="chartInfo">
+                    <!-- Chart information will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 Trading Charts Hub. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        function changeDataType(dataType) {
+            // Update the current data type indicator with user-friendly names
+            const displayNames = {
+                'nifty_cash': 'Spot',
+                'nifty_future': 'Future',
+                'nifty_call': 'Call',
+                'nifty_put': 'Put',
+                'banknifty_cash': 'Spot',
+                'banknifty_future': 'Future',
+                'banknifty_call': 'Call',
+                'banknifty_put': 'Put',
+                'midcpnifty_cash': 'Spot',
+                'midcpnifty_future': 'Future',
+                'midcpnifty_call': 'Call',
+                'midcpnifty_put': 'Put',
+                'sensex_cash': 'Spot',
+                'sensex_future': 'Future',
+                'sensex_call': 'Call',
+                'sensex_put': 'Put'
+            };
+            document.getElementById('currentDataType').textContent = displayNames[dataType] || dataType.replace('_', ' ').title();
+            
+            // Immediately clear date dropdowns to prevent showing old dates
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const daySelect = document.getElementById('daySelect');
+            const dateRangeInfo = document.getElementById('dateRangeInfo');
+            
+            if (yearSelect) yearSelect.innerHTML = '<option value="">Year</option>';
+            if (monthSelect) monthSelect.innerHTML = '<option value="">Month</option>';
+            if (daySelect) daySelect.innerHTML = '<option value="">Day</option>';
+            if (dateRangeInfo) {
+                dateRangeInfo.innerHTML = '<small style="color: #00ccff;">🔄 Loading date range for ' + (displayNames[dataType] || dataType) + '...</small>';
+            }
+            
+            // Clear debug display
+            const debugDisplay = document.getElementById('dateDebug');
+            if (debugDisplay) {
+                debugDisplay.innerHTML = '<small>Debug: Year: <span id="debugYear">-</span> | Month: <span id="debugMonth">-</span> | Day: <span id="debugDay">-</span></small>';
+            }
+            
+            console.log('Date dropdowns cleared immediately on data type change');
+            
+            // Clear previous chart
+            document.getElementById('chartSection').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Clear interactive chart button
+            const existingBtn = document.getElementById('interactiveChartBtn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+            
+            // Show/hide strike and expiry dropdowns based on data type
+            const strikeGroup = document.getElementById('strikeGroup');
+            const expiryGroup = document.getElementById('expiryGroup');
+            
+            if (dataType === 'nifty_call' || dataType === 'nifty_put' || 
+                dataType === 'banknifty_call' || dataType === 'banknifty_put' ||
+                dataType === 'midcpnifty_call' || dataType === 'midcpnifty_put' ||
+                dataType === 'sensex_call' || dataType === 'sensex_put') {
+                strikeGroup.style.display = 'flex';
+                expiryGroup.style.display = 'flex';
+            } else {
+                strikeGroup.style.display = 'none';
+                expiryGroup.style.display = 'none';
+            }
+            
+            // Clear strike and expiry selections
+            document.getElementById('strikeSelect').innerHTML = '<option value="">Choose strike price...</option>';
+            document.getElementById('expirySelect').innerHTML = '<option value="">Choose expiry date...</option>';
+            
+            // Get dates for the new data type
+            // Determine symbol from data type
+            let symbol = 'nifty';
+            if (dataType.startsWith('banknifty_')) {
+                symbol = 'banknifty';
+            } else if (dataType.startsWith('midcpnifty_')) {
+                symbol = 'midcpnifty';
+            } else if (dataType.startsWith('sensex_')) {
+                symbol = 'sensex';
+            }
+            
+            // Fetch date range and populate date selectors
+            fetch(`/get_date_range?data_type=${dataType}&symbol=${symbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Date range API response:', data);
+                    if (data.date_range) {
+                        populateDateSelectors(data.date_range);
+                    } else if (data.error) {
+                        console.error('API error:', data.error);
+                        const dateRangeInfo = document.getElementById('dateRangeInfo');
+                        dateRangeInfo.innerHTML = `
+                            <strong>Error:</strong> ${data.error}<br>
+                            <small style="color: #ff4444;">
+                                Please try refreshing the page or contact support.
+                            </small>
+                        `;
+                    } else {
+                        console.error('No date range data received');
+                        const dateRangeInfo = document.getElementById('dateRangeInfo');
+                        dateRangeInfo.innerHTML = `
+                            <strong>Error:</strong> No date range data received<br>
+                            <small style="color: #ff4444;">
+                                Please try refreshing the page or contact support.
+                            </small>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching date range:', error);
+                    const dateRangeInfo = document.getElementById('dateRangeInfo');
+                    dateRangeInfo.innerHTML = `
+                        <strong>Error:</strong> Failed to fetch date range<br>
+                        <small style="color: #ff4444;">
+                            Network error: ${error.message}<br>
+                            Please check your connection and try again.
+                        </small>
+                    `;
+                });
+        }
+
+        function onSymbolChange() {
+            const symbol = document.getElementById('symbolSelect').value;
+            if (!symbol) return;
+            
+            // Update the data type dropdown based on selected symbol
+            updateDataTypesForSymbol(symbol);
+            
+            // Update date range for the new symbol
+            updateDateRange();
+        }
+
+        function updateDataTypesForSymbol(symbol) {
+            const dataTypeSelect = document.getElementById('dataType');
+            const currentValue = dataTypeSelect.value;
+            
+            // Clear existing options
+            dataTypeSelect.innerHTML = '';
+            
+            // Define data types for each symbol
+            const symbolDataTypes = {
+                'nifty': [
+                    { value: 'nifty_cash', label: 'Spot' },
+                    { value: 'nifty_future', label: 'Future' },
+                    { value: 'nifty_call', label: 'Call' },
+                    { value: 'nifty_put', label: 'Put' }
+                ],
+                'banknifty': [
+                    { value: 'banknifty_cash', label: 'Spot' },
+                    { value: 'banknifty_future', label: 'Future' },
+                    { value: 'banknifty_call', label: 'Call' },
+                    { value: 'banknifty_put', label: 'Put' }
+                ],
+                'midcpnifty': [
+                    { value: 'midcpnifty_cash', label: 'Spot' },
+                    { value: 'midcpnifty_future', label: 'Future' },
+                    { value: 'midcpnifty_call', label: 'Call' },
+                    { value: 'midcpnifty_put', label: 'Put' }
+                ],
+                'sensex': [
+                    { value: 'sensex_cash', label: 'Spot' },
+                    { value: 'sensex_future', label: 'Future' },
+                    { value: 'sensex_call', label: 'Call' },
+                    { value: 'sensex_put', label: 'Put' }
+                ]
+            };
+            
+            const dataTypes = symbolDataTypes[symbol] || [];
+            
+            // Add options
+            dataTypes.forEach(dataType => {
+                const option = document.createElement('option');
+                option.value = dataType.value;
+                option.textContent = dataType.label;
+                dataTypeSelect.appendChild(option);
+            });
+            
+            // Select the first option (usually Spot)
+            if (dataTypes.length > 0) {
+                dataTypeSelect.value = dataTypes[0].value;
+                changeDataType(dataTypes[0].value);
+            }
+        }
+
+        function updateDateRange() {
+            const symbol = document.getElementById('symbolSelect').value;
+            const dataType = document.getElementById('dataType').value;
+            
+            if (!symbol || !dataType) return;
+            
+            // Fetch date range and populate date selectors
+            fetch(`/get_date_range?data_type=${dataType}&symbol=${symbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Date range API response:', data);
+                    if (data.date_range) {
+                        populateDateSelectors(data.date_range);
+                    } else if (data.error) {
+                        console.error('API error:', data.error);
+                        const dateRangeInfo = document.getElementById('dateRangeInfo');
+                        dateRangeInfo.innerHTML = `
+                            <strong>Error:</strong> ${data.error}<br>
+                            <small style="color: #ff4444;">
+                                Please try refreshing the page or contact support.
+                            </small>
+                        `;
+                    } else {
+                        console.error('No date range data received');
+                        const dateRangeInfo = document.getElementById('dateRangeInfo');
+                        dateRangeInfo.innerHTML = `
+                            <strong>Error:</strong> No date range data received<br>
+                            <small style="color: #ff4444;">
+                                Please try refreshing the page or contact support.
+                            </small>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching date range:', error);
+                    const dateRangeInfo = document.getElementById('dateRangeInfo');
+                    dateRangeInfo.innerHTML = `
+                        <strong>Error:</strong> Failed to fetch date range<br>
+                        <small style="color: #ff4444;">
+                            Network error: ${error.message}<br>
+                            Please check your connection and try again.
+                        </small>
+                    `;
+                });
+        }
+        
+        function updateTimeframeDisplay() {
+            const timeframe = document.getElementById('timeframe').value;
+            const timeframeInfo = document.getElementById('timeframeInfo');
+            const timeframeDisplay = document.getElementById('timeframeDisplay');
+            const selectedTimeframe = document.getElementById('selectedTimeframe');
+            
+            // Update the info text based on selection
+            if (timeframe === '1') {
+                timeframeInfo.textContent = 'Real-time 1-minute candlesticks for detailed analysis';
+                timeframeInfo.style.color = '#00ff88';
+            } else if (timeframe <= '5') {
+                timeframeInfo.textContent = `${timeframe}-minute candlesticks for short-term trading`;
+                timeframeInfo.style.color = '#00ccff';
+            } else if (timeframe <= '10') {
+                timeframeInfo.textContent = `${timeframe}-minute candlesticks for medium-term analysis`;
+                timeframeInfo.style.color = '#ff8800';
+            } else {
+                timeframeInfo.textContent = `${timeframe}-minute candlesticks for swing trading`;
+                timeframeInfo.style.color = '#ff4444';
+            }
+            
+            // Update the timeframe display
+            selectedTimeframe.textContent = timeframe;
+            timeframeDisplay.style.display = 'block';
+        }
+
+        // Global variables for date navigation
+        let availableDates = [];
+        let currentDateIndex = 0;
+
+        function calculateActualWeekends(startDateStr, endDateStr) {
+            /**
+             * Calculate actual weekend days between two dates
+             * @param {string} startDateStr - Start date in YYYY-MM-DD format
+             * @param {string} endDateStr - End date in YYYY-MM-DD format
+             * @returns {number} Number of actual weekend days
+             */
+            try {
+                const startDate = new Date(startDateStr);
+                const endDate = new Date(endDateStr);
+                let weekendCount = 0;
+                let currentDate = new Date(startDate);
+                
+                while (currentDate <= endDate) {
+                    // Saturday = 6, Sunday = 0
+                    if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
+                        weekendCount++;
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                return weekendCount;
+            } catch (error) {
+                console.error('Error calculating actual weekends:', error);
+                return 0;
+            }
+        }
+
+        function showWeekendMessage(weekendDate, tradingDate) {
+            const weekendStr = weekendDate.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const tradingStr = new Date(tradingDate).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            // Create a temporary message
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'weekend-message';
+            messageDiv.innerHTML = `
+                <div style="background: rgba(255, 165, 0, 0.1); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: 8px; padding: 10px; margin: 10px 0; color: #ffa500; text-align: center;">
+                    <strong>Weekend Skipped:</strong> ${weekendStr} (No trading data)<br>
+                    <strong>Navigated to:</strong> ${tradingStr} (Trading day)
+                </div>
+            `;
+            
+            // Insert after the date range info
+            const dateRangeInfo = document.getElementById('dateRangeInfo');
+            dateRangeInfo.parentNode.insertBefore(messageDiv, dateRangeInfo.nextSibling);
+            
+            // Remove the message after 5 seconds
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+
+        function populateDateSelectors(dateRange) {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const daySelect = document.getElementById('daySelect');
+            const dateRangeInfo = document.getElementById('dateRangeInfo');
+            
+            // Clear existing options
+            yearSelect.innerHTML = '<option value="">Year</option>';
+            monthSelect.innerHTML = '<option value="">Month</option>';
+            daySelect.innerHTML = '<option value="">Day</option>';
+            
+            // Debug: Log the date range data
+            console.log('Date range data received:', dateRange);
+            console.log('Min date string:', dateRange.min_date);
+            console.log('Max date string:', dateRange.max_date);
+            
+            // Parse min and max dates first with validation
+            const minDate = new Date(dateRange.min_date);
+            const maxDate = new Date(dateRange.max_date);
+            
+            // Debug: Log parsed dates
+            console.log('Parsed min date:', minDate);
+            console.log('Parsed max date:', maxDate);
+            console.log('Min date valid:', !isNaN(minDate.getTime()));
+            console.log('Max date valid:', !isNaN(maxDate.getTime()));
+            
+            // Validate dates
+            if (isNaN(minDate.getTime()) || isNaN(maxDate.getTime())) {
+                console.error('Invalid date range:', {
+                    min_date: dateRange.min_date,
+                    max_date: dateRange.max_date,
+                    minDate: minDate,
+                    maxDate: maxDate
+                });
+                
+                // Show error in UI
+                dateRangeInfo.innerHTML = `
+                    <strong>Error:</strong> Invalid date range data<br>
+                    <small style="color: #ff4444;">
+                        Min: ${dateRange.min_date || 'undefined'} | Max: ${dateRange.max_date || 'undefined'}<br>
+                        Please refresh the page or contact support.
+                    </small>
+                `;
+                return;
+            }
+            
+            // Don't populate years initially - will be populated from actual database dates
+            yearSelect.innerHTML = '<option value="">Year</option>';
+            
+            // Fetch actual available dates from database to show real trading days
+            const dataTypeSelect = document.getElementById('dataType');
+            const currentDataType = dataTypeSelect ? dataTypeSelect.value : 'nifty_cash';
+            let currentSymbol = 'nifty';
+            if (currentDataType.startsWith('banknifty_')) {
+                currentSymbol = 'banknifty';
+            } else if (currentDataType.startsWith('midcpnifty_')) {
+                currentSymbol = 'midcpnifty';
+            } else if (currentDataType.startsWith('sensex_')) {
+                currentSymbol = 'sensex';
+            }
+            
+            console.log('Fetching dates for:', { currentDataType, currentSymbol });
+            
+            fetch(`/get_dates?data_type=${currentDataType}&symbol=${currentSymbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received data:', data);
+                    if (data.dates && data.dates.length > 0) {
+                        availableDates = data.dates;
+                        
+                        // Calculate actual trading days and weekend info from database data
+                        // Use the ACTUAL first and last dates from availableDates, not the API date range
+                        const actualMinDate = availableDates[0];  // First date from database
+                        const actualMaxDate = availableDates[availableDates.length - 1];  // Last date from database
+                        
+                        const minDateObj = new Date(actualMinDate);
+                        const maxDateObj = new Date(actualMaxDate);
+                        const totalCalendarDays = Math.ceil((maxDateObj - minDateObj) / (1000 * 60 * 60 * 24)) + 1;
+                        const actualTradingDays = availableDates.length;
+                        const actualWeekends = calculateActualWeekends(actualMinDate, actualMaxDate);
+                        const holidays = totalCalendarDays - actualTradingDays - actualWeekends;
+                        
+                        // Debug logging for negative holidays issue
+                        console.log('Date Range Debug:', {
+                            dataType: currentDataType,
+                            apiDateRange: dateRange.min_date + ' to ' + dateRange.max_date,
+                            actualDateRange: actualMinDate + ' to ' + actualMaxDate,
+                            totalCalendarDays,
+                            actualTradingDays,
+                            actualWeekends,
+                            holidays,
+                            isNegativeHolidays: holidays < 0,
+                            availableDatesCount: availableDates.length,
+                            expectedTradingDays: totalCalendarDays - actualWeekends,
+                            excessTradingDays: actualTradingDays - (totalCalendarDays - actualWeekends)
+                        });
+                        
+                        // Debug: Check for calculation issues with options data
+                        if (holidays < 0) {
+                            console.error('CALCULATION ERROR: Negative holidays detected!', {
+                                dataType: currentDataType,
+                                totalCalendarDays,
+                                actualTradingDays,
+                                actualWeekends,
+                                calculatedHolidays: holidays,
+                                dateRange: `${dateRange.min_date} to ${dateRange.max_date}`,
+                                availableDatesFirst10: availableDates.slice(0, 10),
+                                availableDatesLast10: availableDates.slice(-10)
+                            });
+                            
+                            // For options data with calculation errors, show a warning
+                            if (currentDataType && (currentDataType.includes('_call') || currentDataType.includes('_put'))) {
+                                console.warn('This appears to be options data with more trading days than calendar calculation expects');
+                            }
+                        }
+                        
+                        // Update date range info with REAL database data
+                        dateRangeInfo.innerHTML = `
+                            <strong>Available Date Range:</strong> ${actualMinDate} to ${actualMaxDate} | 📅 <strong>Total Days:</strong> ${totalCalendarDays} | 📊 <strong>Trading Days:</strong> ${actualTradingDays} | 🏖️ <strong>Weekends:</strong> ${actualWeekends} | 🏛️ <strong>Holidays:</strong> ${holidays}
+                        `;
+                        
+                        // Update year dropdown with actual available years from database (same as Options Chain)
+                        const yearSelect = document.getElementById('yearSelect');
+                        const currentYearValue = yearSelect.value; // Preserve current selection
+                        
+                        // Get unique years from available dates (same method as Options Chain)
+                        const years = [...new Set(availableDates.map(date => date.substring(0, 4)))].sort();
+                        
+                        // Clear and repopulate with actual years from database
+                        yearSelect.innerHTML = '<option value="">Year</option>';
+                        years.forEach(year => {
+                            const option = document.createElement('option');
+                            option.value = year;
+                            option.textContent = year;
+                            if (year === currentYearValue) {
+                                option.selected = true; // Restore selection if still valid
+                            }
+                            yearSelect.appendChild(option);
+                        });
+                        
+                        console.log(`Year dropdown updated with years: ${years.join(', ')}`);
+                        console.log('Date dropdowns ready - please select Year, Month, and Day manually');
+                        
+                        // Set current date index to middle of range
+                        currentDateIndex = Math.floor(availableDates.length / 2);
+                        
+                        // Enable/disable navigation buttons
+                        updateNavigationButtons();
+                        
+                        // Update debug display
+                        updateDebugDisplay();
+                        
+                        console.log('Database dates loaded:', {
+                            totalCalendarDays,
+                            actualTradingDays,
+                            actualWeekends,
+                            holidays,
+                            availableDatesCount: availableDates.length
+                        });
+                    } else {
+                        console.warn('No dates received from database, using fallback');
+                        fallbackDateCalculation(minDate, maxDate, dateRange);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching available dates:', error);
+                    console.log('Using fallback calculation due to error');
+                    fallbackDateCalculation(minDate, maxDate, dateRange);
+                });
+        }
+        
+        function fallbackDateCalculation(minDate, maxDate, dateRange) {
+            // Fallback calculation if database fetch fails
+            availableDates = [];
+            
+            // Validate dates before proceeding
+            if (isNaN(minDate.getTime()) || isNaN(maxDate.getTime())) {
+                console.error('Invalid dates in fallback calculation:', {
+                    minDate: minDate,
+                    maxDate: maxDate,
+                    dateRange: dateRange
+                });
+                
+                const dateRangeInfo = document.getElementById('dateRangeInfo');
+                dateRangeInfo.innerHTML = `
+                    <strong>Error:</strong> Invalid date range data<br>
+                    <small style="color: #ff4444;">
+                        Min: ${dateRange.min_date || 'undefined'} | Max: ${dateRange.max_date || 'undefined'}<br>
+                        Please refresh the page or contact support.
+                    </small>
+                `;
+                return;
+            }
+            
+            const currentDate = new Date(minDate);
+            while (currentDate <= maxDate) {
+                const dayOfWeek = currentDate.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                
+                if (!isWeekend) {
+                    availableDates.push(currentDate.toISOString().split('T')[0]);
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            const totalCalendarDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
+            const actualTradingDays = availableDates.length;
+            const actualWeekends = calculateActualWeekends(dateRange.min_date, dateRange.max_date);
+            const holidays = totalCalendarDays - actualTradingDays - actualWeekends;
+            
+            // Debug: Check for calculation issues in fallback
+            if (holidays < 0) {
+                console.error('FALLBACK CALCULATION ERROR: Negative holidays!', {
+                    totalCalendarDays,
+                    actualTradingDays,
+                    actualWeekends,
+                    calculatedHolidays: holidays
+                });
+            }
+            
+            const dateRangeInfo = document.getElementById('dateRangeInfo');
+            dateRangeInfo.innerHTML = `
+                <strong>Available Date Range:</strong> ${dateRange.min_date} to ${dateRange.max_date} | 📅 <strong>Total Days:</strong> ${totalCalendarDays} | 📊 <strong>Trading Days:</strong> ${actualTradingDays} | 🏖️ <strong>Weekends:</strong> ${actualWeekends} | 🏛️ <strong>Holidays:</strong> ${holidays}
+            `;
+            
+            currentDateIndex = Math.floor(availableDates.length / 2);
+            updateNavigationButtons();
+            updateDebugDisplay();
+        }
+
+        function updateDateOptions() {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const daySelect = document.getElementById('daySelect');
+            
+            const selectedYear = yearSelect.value;
+            const selectedMonth = monthSelect.value;
+            
+            // Only clear month and day selectors if year changed
+            if (yearSelect.dataset.lastYear !== selectedYear) {
+                monthSelect.innerHTML = '<option value="">Month</option>';
+                daySelect.innerHTML = '<option value="">Day</option>';
+                
+                // Populate month selector
+                for (let month = 1; month <= 12; month++) {
+                    const option = document.createElement('option');
+                    option.value = month.toString().padStart(2, '0');
+                    option.textContent = new Date(selectedYear, month - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+                    monthSelect.appendChild(option);
+                }
+                
+                // Store the year we just processed
+                yearSelect.dataset.lastYear = selectedYear;
+            }
+            
+            // Only populate day selector if month is selected and year hasn't changed
+            if (selectedMonth && selectedYear) {
+                // Check if day selector is already populated
+                if (daySelect.children.length <= 1) {
+                    // Filter available days from database for this year-month (same as Options Chain)
+                    const yearMonth = `${selectedYear}-${selectedMonth}`;
+                    const availableDays = availableDates
+                        .filter(date => date.startsWith(yearMonth))
+                        .map(date => date.substring(8, 10))
+                        .sort((a, b) => parseInt(a) - parseInt(b));
+                    
+                    // Show all days in month but only enable available ones
+                    const daysInMonth = new Date(selectedYear, parseInt(selectedMonth), 0).getDate();
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dayStr = day.toString().padStart(2, '0');
+                        const option = document.createElement('option');
+                        option.value = dayStr;
+                        
+                        // Check if this day is available in database
+                        const isAvailable = availableDays.includes(dayStr);
+                        
+                        // Check if this is a weekend
+                        const date = new Date(selectedYear, parseInt(selectedMonth) - 1, day);
+                        const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+                        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                        
+                        if (isWeekend) {
+                            option.textContent = `${day} (Weekend)`;
+                            option.disabled = true;
+                            option.style.color = '#ff8888';
+                            option.style.fontStyle = 'italic';
+                        } else if (!isAvailable) {
+                            option.textContent = `${day} (Holiday)`;
+                            option.disabled = true;
+                            option.style.color = '#666';
+                            option.style.fontStyle = 'italic';
+                        } else {
+                            option.textContent = day;
+                        }
+                        
+                        daySelect.appendChild(option);
+                    }
+                }
+            }
+            
+            // Update debug display
+            updateDebugDisplay();
+        }
+
+        function onMonthChange() {
+            const selectedMonth = document.getElementById('monthSelect').value;
+            const selectedYear = document.getElementById('yearSelect').value;
+            console.log('Month changed:', selectedMonth);
+            
+            // Only populate day selector if month is selected
+            if (selectedMonth && selectedYear) {
+                const daySelect = document.getElementById('daySelect');
+                daySelect.innerHTML = '<option value="">Day</option>';
+                
+                // Filter available days from database for this year-month (same as Options Chain)
+                const yearMonth = `${selectedYear}-${selectedMonth}`;
+                const availableDays = availableDates
+                    .filter(date => date.startsWith(yearMonth))
+                    .map(date => date.substring(8, 10))
+                    .sort((a, b) => parseInt(a) - parseInt(b));
+                
+                const daysInMonth = new Date(selectedYear, parseInt(selectedMonth), 0).getDate();
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayStr = day.toString().padStart(2, '0');
+                    const option = document.createElement('option');
+                    option.value = dayStr;
+                    
+                    // Check if this day is available in database
+                    const isAvailable = availableDays.includes(dayStr);
+                    
+                    // Check if this is a weekend
+                    const date = new Date(selectedYear, parseInt(selectedMonth) - 1, day);
+                    const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                    
+                    if (isWeekend) {
+                        option.textContent = `${day} (Weekend)`;
+                        option.disabled = true;
+                        option.style.color = '#ff8888';
+                        option.style.fontStyle = 'italic';
+                    } else if (!isAvailable) {
+                        option.textContent = `${day} (Holiday)`;
+                        option.disabled = true;
+                        option.style.color = '#666';
+                        option.style.fontStyle = 'italic';
+                    } else {
+                        option.textContent = day;
+                    }
+                    
+                    daySelect.appendChild(option);
+                }
+            }
+            
+            updateDebugDisplay();
+        }
+
+        function updateDebugDisplay() {
+            const year = document.getElementById('yearSelect').value || '-';
+            const month = document.getElementById('monthSelect').value || '-';
+            const day = document.getElementById('daySelect').value || '-';
+            
+            document.getElementById('debugYear').textContent = year;
+            document.getElementById('debugMonth').textContent = month;
+            document.getElementById('debugDay').textContent = day;
+        }
+
+        function findNextTradingDay(date) {
+            let nextDay = new Date(date);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            // Keep moving forward until we find a weekday
+            while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
+                nextDay.setDate(nextDay.getDate() + 1);
+            }
+            
+            return nextDay;
+        }
+
+        function findPreviousTradingDay(date) {
+            let prevDay = new Date(date);
+            prevDay.setDate(prevDay.getDate() - 1);
+            
+            // Keep moving backward until we find a weekday
+            while (prevDay.getDay() === 0 || prevDay.getDay() === 6) {
+                prevDay.setDate(prevDay.getDate() - 1);
+            }
+            
+            return prevDay;
+        }
+
+        function isWeekend(date) {
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 0 || dayOfWeek === 6;
+        }
+
+        function getSelectedDate() {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const daySelect = document.getElementById('daySelect');
+            
+            if (!yearSelect || !monthSelect || !daySelect) {
+                console.warn('Date selector elements not found');
+                return null;
+            }
+            
+            const year = yearSelect.value;
+            const month = monthSelect.value;
+            const day = daySelect.value;
+            
+            console.log('getSelectedDate called:', { year, month, day });
+            
+            if (year && month && day) {
+                const selectedDate = `${year}-${month}-${day}`;
+                console.log('Selected date:', selectedDate);
+                return selectedDate;
+            }
+            
+            console.warn('Incomplete date selection:', { year, month, day });
+            return null;
+        }
+
+        function navigateDate(direction) {
+            if (availableDates.length === 0) return;
+            
+            let targetDate;
+            if (direction > 0) {
+                // Next date
+                currentDateIndex++;
+                if (currentDateIndex >= availableDates.length) {
+                    currentDateIndex = availableDates.length - 1;
+                    return;
+                }
+                targetDate = availableDates[currentDateIndex];
+            } else {
+                // Previous date
+                currentDateIndex--;
+                if (currentDateIndex < 0) {
+                    currentDateIndex = 0;
+                    return;
+                }
+                targetDate = availableDates[currentDateIndex];
+            }
+            
+            // Check if target date is a weekend
+            const targetDateObj = new Date(targetDate);
+            if (isWeekend(targetDateObj)) {
+                // Find the next/previous trading day
+                if (direction > 0) {
+                    targetDateObj = findNextTradingDay(targetDateObj);
+                } else {
+                    targetDateObj = findPreviousTradingDay(targetDateObj);
+                }
+                
+                // Update targetDate to the trading day
+                targetDate = targetDateObj.toISOString().split('T')[0];
+                
+                // Find the index of this trading day in availableDates
+                const newIndex = availableDates.indexOf(targetDate);
+                if (newIndex !== -1) {
+                    currentDateIndex = newIndex;
+                }
+            }
+            
+            const dateParts = targetDate.split('-');
+            
+            // Update selectors without triggering updateDateOptions multiple times
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const daySelect = document.getElementById('daySelect');
+            
+            // Set year first
+            yearSelect.value = dateParts[0];
+            // Clear the lastYear dataset to force month repopulation
+            delete yearSelect.dataset.lastYear;
+            updateDateOptions();
+            
+            // Set month and day
+            monthSelect.value = dateParts[1];
+            daySelect.value = dateParts[2];
+            
+            // Trigger date change
+            onDateChange();
+            
+            // Update navigation buttons
+            updateNavigationButtons();
+            
+            // Show feedback if we skipped a weekend
+            const originalDate = new Date(availableDates[direction > 0 ? currentDateIndex - 1 : currentDateIndex + 1]);
+            if (isWeekend(originalDate)) {
+                showWeekendMessage(originalDate, targetDate);
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.querySelector('.nav-btn[onclick="navigateDate(-1)"]');
+            const nextBtn = document.querySelector('.nav-btn[onclick="navigateDate(1)"]');
+            
+            if (prevBtn) prevBtn.disabled = currentDateIndex <= 0;
+            if (nextBtn) nextBtn.disabled = currentDateIndex >= availableDates.length - 1;
+        }
+
+        function onDateChange() {
+            const dataType = document.getElementById('dataType').value;
+            const date = getSelectedDate();
+            
+            if (!date) return;
+            
+            // If it's an option type, get strikes for the selected date
+            if (dataType === 'nifty_call' || dataType === 'nifty_put' || 
+                dataType === 'banknifty_call' || dataType === 'banknifty_put' ||
+                dataType === 'midcpnifty_call' || dataType === 'midcpnifty_put' ||
+                dataType === 'sensex_call' || dataType === 'sensex_put') {
+                
+                // Determine symbol from data type
+                let symbol = 'nifty';
+                if (dataType.startsWith('banknifty_')) {
+                    symbol = 'banknifty';
+                } else if (dataType.startsWith('midcpnifty_')) {
+                    symbol = 'midcpnifty';
+                } else if (dataType.startsWith('sensex_')) {
+                    symbol = 'sensex';
+                }
+                
+                fetch(`/get_strikes?date=${date}&data_type=${dataType}&symbol=${symbol}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const strikeSelect = document.getElementById('strikeSelect');
+                        strikeSelect.innerHTML = '<option value="">Choose strike price...</option>';
+                        
+                        if (data.strikes && data.strikes.length > 0) {
+                            data.strikes.forEach(strike => {
+                                const option = document.createElement('option');
+                                option.value = strike;
+                                option.textContent = strike;
+                                strikeSelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching strikes:', error);
+                    });
+            }
+        }
+
+        function onStrikeChange() {
+            const dataType = document.getElementById('dataType').value;
+            const date = getSelectedDate();
+            const strike = document.getElementById('strikeSelect').value;
+            
+            if (!date || !strike) return;
+            
+            // Get expiries for the selected date and strike
+            if (dataType === 'nifty_call' || dataType === 'nifty_put' || 
+                dataType === 'banknifty_call' || dataType === 'banknifty_put' ||
+                dataType === 'midcpnifty_call' || dataType === 'midcpnifty_put' ||
+                dataType === 'sensex_call' || dataType === 'sensex_put') {
+                
+                // Determine symbol from data type
+                let symbol = 'nifty';
+                if (dataType.startsWith('banknifty_')) {
+                    symbol = 'banknifty';
+                } else if (dataType.startsWith('midcpnifty_')) {
+                    symbol = 'midcpnifty';
+                } else if (dataType.startsWith('sensex_')) {
+                    symbol = 'sensex';
+                }
+                
+                fetch(`/get_expiries?date=${date}&strike=${strike}&data_type=${dataType}&symbol=${symbol}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const expirySelect = document.getElementById('expirySelect');
+                        expirySelect.innerHTML = '<option value="">Choose expiry date...</option>';
+                        
+                        if (data.expiries && data.expiries.length > 0) {
+                            data.expiries.forEach(expiry => {
+                                const option = document.createElement('option');
+                                option.value = expiry;
+                                option.textContent = expiry;
+                                expirySelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching expiries:', error);
+                    });
+            }
+        }
+
+        function generateChart() {
+            const dataType = document.getElementById('dataType').value;
+            const date = getSelectedDate();
+            const chartType = document.getElementById('chartType').value;
+            const timeframe = document.getElementById('timeframe').value;
+            
+            // Debug: Log the selected timeframe
+            console.log('Selected timeframe:', timeframe);
+            console.log('Timeframe type:', typeof timeframe);
+            const strike = document.getElementById('strikeSelect').value;
+            const expiry = document.getElementById('expirySelect').value;
+
+            if (!date) {
+                const year = document.getElementById('yearSelect').value;
+                const month = document.getElementById('monthSelect').value;
+                const day = document.getElementById('daySelect').value;
+                
+                let missingFields = [];
+                if (!year) missingFields.push('Year');
+                if (!month) missingFields.push('Month');
+                if (!day) missingFields.push('Day');
+                
+                showError(`Please select ${missingFields.join(', ')} from the dropdown${missingFields.length > 1 ? 's' : ''} to generate the chart.`);
+                return;
+            }
+            
+            // Check if selected date is a weekend
+            const selectedDateObj = new Date(date);
+            if (isWeekend(selectedDateObj)) {
+                const nextTradingDay = findNextTradingDay(selectedDateObj);
+                const nextTradingDate = nextTradingDay.toISOString().split('T')[0];
+                const nextTradingStr = nextTradingDay.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                
+                showError(`Weekend selected: ${date} (${selectedDateObj.toLocaleDateString('en-US', { weekday: 'long' })})<br>
+                          No trading data available on weekends.<br>
+                          <strong>Next trading day:</strong> ${nextTradingStr}<br>
+                          <button onclick="navigateToDate('${nextTradingDate}')" style="background: #00ccff; color: white; border: none; padding: 5px 10px; border-radius: 5px; margin-top: 5px; cursor: pointer;">
+                              📅 Go to ${nextTradingDate}
+                          </button>`);
+                return;
+            }
+
+            // Validate timeframe
+            if (!timeframe || timeframe < 1 || timeframe > 60) {
+                showError('Please select a valid timeframe between 1 and 60 minutes');
+                return;
+            }
+
+            // For options, validate strike and expiry
+            if (dataType === 'nifty_call' || dataType === 'nifty_put' || 
+                dataType === 'banknifty_call' || dataType === 'banknifty_put' ||
+                dataType === 'midcpnifty_call' || dataType === 'midcpnifty_put' ||
+                dataType === 'sensex_call' || dataType === 'sensex_put') {
+                if (!strike) {
+                    showError('Please select a strike price for options');
+                    return;
+                }
+                if (!expiry) {
+                    showError('Please select an expiry date for options');
+                    return;
+                }
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('chartSection').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('interactiveChartError').style.display = 'none';
+            
+            // Clear interactive chart button
+            const existingBtn = document.getElementById('interactiveChartBtn');
+            if (existingBtn) {
+                existingBtn.remove();
+            }
+
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('data_type', dataType);
+            formData.append('date', date);
+            formData.append('chart_type', chartType);
+            formData.append('timeframe', timeframe);
+            
+            // Add symbol parameter
+            let symbol = 'nifty';
+            if (dataType.startsWith('banknifty_')) {
+                symbol = 'banknifty';
+            } else if (dataType.startsWith('midcpnifty_')) {
+                symbol = 'midcpnifty';
+            } else if (dataType.startsWith('sensex_')) {
+                symbol = 'sensex';
+            }
+            formData.append('symbol', symbol);
+            
+            // Debug: Log timeframe being sent
+            console.log('Sending timeframe to backend:', timeframe);
+            console.log('Timeframe input element:', document.getElementById('timeframe'));
+            console.log('Timeframe input value:', document.getElementById('timeframe').value);
+            console.log('Timeframe type:', typeof timeframe);
+            
+            // Add strike and expiry for options
+            if (strike) formData.append('strike', strike);
+            if (expiry) formData.append('expiry', expiry);
+
+            // Send request
+            fetch('/generate_chart', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                // Debug: Log backend response
+                console.log('Chart generated:', data.chart_title, 'Records:', data.record_count);
+                
+                if (data.success) {
+                    displayChart(data);
+                } else {
+                    showError(data.error || 'Failed to generate chart');
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                showError('Network error: ' + error.message);
+            });
+        }
+
+        function displayChart(data) {
+            // Store chart data globally for interactive chart switching
+            window.lastChartData = data;
+            
+            // Display chart image
+            const chartImage = document.getElementById('chartImage');
+            chartImage.src = 'data:image/png;base64,' + data.chart_base64;
+            
+            // Update chart title
+            document.getElementById('chartTitle').textContent = data.chart_title;
+            
+            // Update chart info
+            const chartInfo = document.getElementById('chartInfo');
+            chartInfo.innerHTML = '';
+            
+            // Add record count
+            if (data.record_count) {
+                addInfoItem(chartInfo, 'Records', data.record_count);
+            }
+            
+            // Add time frame info
+            if (data.time_frame) {
+                addInfoItem(chartInfo, 'Market Open', data.time_frame.market_open);
+                addInfoItem(chartInfo, 'Market Close', data.time_frame.market_close);
+                addInfoItem(chartInfo, 'Duration', data.time_frame.trading_duration);
+                addInfoItem(chartInfo, 'Intervals', data.time_frame.data_intervals);
+            }
+            
+            // Add data source with user-friendly names
+            if (data.data_source) {
+                const displayNames = {
+                    'nifty_cash': 'SPOT',
+                    'nifty_future': 'FUTURE',
+                    'nifty_call': 'CALL',
+                    'nifty_put': 'PUT',
+                    'banknifty_cash': 'SPOT',
+                    'banknifty_future': 'FUTURE',
+                    'banknifty_call': 'CALL',
+                    'banknifty_put': 'PUT',
+                    'midcpnifty_cash': 'SPOT',
+                    'midcpnifty_future': 'FUTURE',
+                    'midcpnifty_call': 'CALL',
+                    'midcpnifty_put': 'PUT',
+                    'sensex_cash': 'SPOT',
+                    'sensex_future': 'FUTURE',
+                    'sensex_call': 'CALL',
+                    'sensex_put': 'PUT'
+                };
+                const dataSourceDisplay = displayNames[data.data_source] || data.data_source.replace('_', ' ').toUpperCase();
+                addInfoItem(chartInfo, 'Data Source', dataSourceDisplay);
+            }
+            
+            // Add timeframe for candlestick charts
+            if (data.timeframe) {
+                addInfoItem(chartInfo, 'Timeframe', data.timeframe + ' min');
+            }
+            
+            // Show chart section
+            document.getElementById('chartSection').style.display = 'block';
+            
+            // Show interactive chart option for candlestick charts
+            if (data.chart_data && data.chart_data.length > 0) {
+                // Add interactive chart button
+                const chartContainer = document.querySelector('.chart-container');
+                if (!document.getElementById('interactiveChartBtn')) {
+                    const interactiveBtn = document.createElement('button');
+                    interactiveBtn.id = 'interactiveChartBtn';
+                    interactiveBtn.className = 'interactive-btn';
+                    interactiveBtn.innerHTML = '🔄 Show Interactive Chart';
+                    interactiveBtn.onclick = () => {
+                        console.log('Interactive chart button clicked!');
+                        console.log('Data available:', !!data);
+                        console.log('Chart data available:', !!data.chart_data);
+                        displayInteractiveChart(data, 'candlestick');
+                    };
+                    chartContainer.appendChild(interactiveBtn);
+                }
+            }
+        }
+
+        function addInfoItem(container, label, value) {
+            const item = document.createElement('div');
+            item.className = 'info-item';
+            item.innerHTML = `
+                <div class="label">${label}</div>
+                <div class="value">${value}</div>
+            `;
+            container.appendChild(item);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Function to go back to main page
+        function goBack() {
+            window.location.href = '/';
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial data type indicator with user-friendly names
+            const currentDataType = '{{ selected_data_type }}';
+            let currentSymbol = 'nifty'; // Default symbol
+            const displayNames = {
+                'nifty_cash': 'Spot',
+                'nifty_future': 'Future',
+                'nifty_call': 'Call',
+                'nifty_put': 'Put',
+                'banknifty_cash': 'Spot',
+                'banknifty_future': 'Future',
+                'banknifty_call': 'Call',
+                'banknifty_put': 'Put',
+                'midcpnifty_cash': 'Spot',
+                'midcpnifty_future': 'Future',
+                'midcpnifty_call': 'Call',
+                'midcpnifty_put': 'Put',
+                'sensex_cash': 'Spot',
+                'sensex_future': 'Future',
+                'sensex_call': 'Call',
+                'sensex_put': 'Put'
+            };
+            document.getElementById('currentDataType').textContent = displayNames[currentDataType] || currentDataType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            // Show/hide strike and expiry dropdowns based on initial data type
+            const strikeGroup = document.getElementById('strikeGroup');
+            const expiryGroup = document.getElementById('expiryGroup');
+            
+            if (currentDataType === 'nifty_call' || currentDataType === 'nifty_put' || 
+                currentDataType === 'banknifty_call' || currentDataType === 'banknifty_put' ||
+                currentDataType === 'midcpnifty_call' || currentDataType === 'midcpnifty_put' ||
+                currentDataType === 'sensex_call' || currentDataType === 'sensex_put') {
+                strikeGroup.style.display = 'flex';
+                expiryGroup.style.display = 'flex';
+            } else {
+                strikeGroup.style.display = 'none';
+                expiryGroup.style.display = 'none';
+            }
+            
+            // Initialize timeframe display
+            updateTimeframeDisplay();
+            
+            // Initialize date selectors for the current data type
+            let symbol = 'nifty';
+            if (currentDataType.startsWith('banknifty_')) {
+                symbol = 'banknifty';
+                currentSymbol = 'banknifty';
+            } else if (currentDataType.startsWith('midcpnifty_')) {
+                symbol = 'midcpnifty';
+                currentSymbol = 'midcpnifty';
+            } else if (currentDataType.startsWith('sensex_')) {
+                symbol = 'sensex';
+                currentSymbol = 'sensex';
+            }
+            
+            // Fetch and populate date selectors
+            fetch(`/get_date_range?data_type=${currentDataType}&symbol=${symbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Initial date range API response:', data);
+                    if (data.date_range) {
+                        populateDateSelectors(data.date_range);
+                    } else if (data.error) {
+                        console.error('API error:', data.error);
+                        const dateRangeInfo = document.getElementById('dateRangeInfo');
+                        dateRangeInfo.innerHTML = `
+                            <strong>Error:</strong> ${data.error}<br>
+                            <small style="color: #ff4444;">
+                                Please try refreshing the page or contact support.
+                            </small>
+                        `;
+                    } else {
+                        console.error('No date range data received');
+                        const dateRangeInfo = document.getElementById('dateRangeInfo');
+                        dateRangeInfo.innerHTML = `
+                            <strong>Error:</strong> No date range data received<br>
+                            <small style="color: #ff4444;">
+                                Please try refreshing the page or contact support.
+                            </small>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching date range:', error);
+                    const dateRangeInfo = document.getElementById('dateRangeInfo');
+                    dateRangeInfo.innerHTML = `
+                        <strong>Error:</strong> Failed to fetch date range<br>
+                        <small style="color: #ff4444;">
+                            Network error: ${error.message}<br>
+                            Please check your connection and try again.
+                        </small>
+                    `;
+                });
+        });
+        
+        // Interactive Chart Variables
+        let currentChart = null;
+        let candlestickData = [];
+        
+        // Function to check if library is ready
+        function isLibraryReady() {
+            const hasLightweightCharts = typeof LightweightCharts !== 'undefined';
+            const hasCreateChart = hasLightweightCharts && typeof LightweightCharts.createChart === 'function';
+            
+            console.log('Library check:', {
+                hasLightweightCharts,
+                hasCreateChart,
+                LightweightCharts: typeof LightweightCharts,
+                createChart: hasLightweightCharts ? typeof LightweightCharts.createChart : 'N/A'
+            });
+            
+            return hasLightweightCharts && hasCreateChart;
+        }
+        
+        // Function to wait for library to be ready
+        function waitForLibrary(maxWaitTime = 10000) {
+            return new Promise((resolve, reject) => {
+                if (isLibraryReady()) {
+                    resolve();
+                    return;
+                }
+                
+                const startTime = Date.now();
+                const checkInterval = setInterval(() => {
+                    if (isLibraryReady()) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    } else if (Date.now() - startTime > maxWaitTime) {
+                        clearInterval(checkInterval);
+                        reject(new Error('Library failed to load within timeout period'));
+                    }
+                }, 100);
+            });
+        }
+        
+        // Function to display interactive chart
+        function displayInteractiveChart(data, chartType) {
+            try {
+                console.log('=== INTERACTIVE CHART DEBUG ===');
+                console.log('Starting interactive chart display with data:', data);
+                console.log('Chart type:', chartType);
+                console.log('Data structure:', {
+                    hasChartData: !!data.chart_data,
+                    chartDataLength: data.chart_data ? data.chart_data.length : 'N/A',
+                    chartDataSample: data.chart_data ? data.chart_data.slice(0, 2) : 'N/A'
+                });
+                
+                // Check if we have chart data
+                if (!data || !data.chart_data || data.chart_data.length === 0) {
+                    throw new Error('No chart data available');
+                }
+                
+                console.log('Chart data validation passed');
+                
+                // Wait for library to be ready
+                console.log('Waiting for library to be ready...');
+                waitForLibrary().then(() => {
+                    console.log('Library is ready, proceeding with chart creation...');
+                    
+                    // Hide static chart and show interactive chart
+                    document.getElementById('chartImage').style.display = 'none';
+                    document.getElementById('interactiveChartContainer').style.display = 'block';
+                    
+                    // Change button text
+                    const btn = document.getElementById('interactiveChartBtn');
+                    if (btn) {
+                        btn.innerHTML = '🖼️ Show Static Chart';
+                        btn.onclick = () => showStaticChart();
+                    }
+                    
+                    // Create interactive candlestick chart
+                    if (chartType === 'candlestick') {
+                        console.log('Creating candlestick chart...');
+                        createInteractiveCandlestickChart(data.chart_data);
+                    } else {
+                        throw new Error('Interactive chart only available for candlestick charts');
+                    }
+                }).catch(error => {
+                    console.error('Library wait failed:', error);
+                    throw new Error('Library not ready: ' + error.message);
+                });
+                
+            } catch (error) {
+                console.error('Error creating interactive chart:', error);
+                // Fallback to static chart
+                document.getElementById('interactiveChartContainer').style.display = 'none';
+                document.getElementById('chartImage').style.display = 'block';
+                
+                // Show detailed error message
+                document.getElementById('interactiveChartError').style.display = 'block';
+                document.getElementById('interactiveChartError').innerHTML = `
+                    <p><strong>Interactive chart failed to load:</strong> ${error.message}</p>
+                    <p>This could be due to:</p>
+                    <ul style="text-align: left; margin: 10px 0; padding-left: 20px;">
+                        <li>Internet connection issues</li>
+                        <li>Chart library not loading properly</li>
+                        <li>Browser compatibility issues</li>
+                        <li>Data format issues</li>
+                    </ul>
+                    <p>The static chart is still available for analysis.</p>
+                    <button onclick="retryInteractiveChart()" class="generate-btn" style="margin-top: 10px; padding: 8px 16px; font-size: 0.9rem;">
+                        🔄 Retry Interactive Chart
+                    </button>
+                `;
+            }
+        }
+        
+        // Function to show static chart
+        function showStaticChart() {
+            document.getElementById('interactiveChartContainer').style.display = 'none';
+            document.getElementById('chartImage').style.display = 'block';
+            
+            // Change button text back
+            const btn = document.getElementById('interactiveChartBtn');
+            if (btn) {
+                btn.innerHTML = '🔄 Show Interactive Chart';
+                btn.onclick = () => {
+                    console.log('Interactive chart button clicked (from static view)!');
+                    console.log('Last chart data available:', !!window.lastChartData);
+                    displayInteractiveChart(window.lastChartData, 'candlestick');
+                };
+            }
+        }
+        
+        // Function to retry interactive chart
+        function retryInteractiveChart() {
+            // Hide error message
+            document.getElementById('interactiveChartError').style.display = 'none';
+            
+            // Try to display interactive chart again
+            if (window.lastChartData) {
+                displayInteractiveChart(window.lastChartData, 'candlestick');
+            } else {
+                showError('No chart data available for retry. Please generate a chart first.');
+            }
+        }
+        
+        // Function to create interactive candlestick chart
+        function createInteractiveCandlestickChart(chartData) {
+            try {
+                console.log('=== INTERACTIVE CHART CREATION START ===');
+                console.log('Creating interactive candlestick chart with data:', chartData);
+                console.log('Chart data length:', chartData.length);
+                console.log('Chart data type:', typeof chartData);
+                console.log('Is array:', Array.isArray(chartData));
+                console.log('First few data points:', chartData.slice(0, 3));
+                
+                if (!chartData || chartData.length === 0) {
+                    throw new Error('No chart data provided to createInteractiveCandlestickChart');
+                }
+                
+                // Check if library is available
+                if (typeof LightweightCharts === 'undefined') {
+                    throw new Error('LightweightCharts library not available');
+                }
+                
+                // Validate chart data
+                if (!chartData || !Array.isArray(chartData) || chartData.length === 0) {
+                    throw new Error('Invalid chart data: ' + JSON.stringify(chartData));
+                }
+                
+                // Check if required fields exist in first data point
+                const firstPoint = chartData[0];
+                if (!firstPoint.time || firstPoint.open === undefined || firstPoint.high === undefined || 
+                    firstPoint.low === undefined || firstPoint.close === undefined) {
+                    throw new Error('Invalid data structure. Required fields: time, open, high, low, close');
+                }
+                
+                // Debug: Show time data analysis
+                console.log('=== TIME DATA ANALYSIS ===');
+                console.log('First 5 time values:', chartData.slice(0, 5).map(c => c.time));
+                console.log('Time data types:', chartData.slice(0, 5).map(c => typeof c.time));
+                console.log('Sample time data:', chartData.slice(0, 5).map(c => ({ time: c.time, open: c.open, close: c.close })));
+                console.log('========================');
+                
+                // Destroy existing chart if it exists
+                if (currentChart) {
+                    try {
+                        currentChart.remove();
+                    } catch (e) {
+                        console.warn('Error removing existing chart:', e);
+                    }
+                    currentChart = null;
+                }
+
+                // Create the chart container
+                const chartContainer = document.getElementById('candlestickChart');
+                const tooltipContainer = document.getElementById('interactiveChartContainer');
+                if (!chartContainer || !tooltipContainer) {
+                    throw new Error('Chart container not found');
+                }
+                
+                console.log('Chart container dimensions:', chartContainer.clientWidth, 'x', chartContainer.clientHeight);
+                
+                // Ensure container has proper dimensions
+                if (chartContainer.clientWidth === 0 || chartContainer.clientHeight === 0) {
+                    chartContainer.style.width = '100%';
+                    chartContainer.style.height = '500px';
+                }
+                
+                console.log('Creating chart with LightweightCharts...');
+                console.log('LightweightCharts object:', LightweightCharts);
+                console.log('createChart method:', LightweightCharts.createChart);
+                
+                // Validate that createChart method exists
+                if (typeof LightweightCharts.createChart !== 'function') {
+                    throw new Error('LightweightCharts.createChart is not a function. Library may not be loaded correctly.');
+                }
+                
+                // Create the chart
+                const chart = LightweightCharts.createChart(chartContainer, {
+                    width: Math.max(chartContainer.clientWidth, 800),
+                    height: 500,
+                    layout: {
+                        background: { color: '#1a1a1a' },
+                        textColor: '#cccccc',
+                    },
+                    grid: {
+                        vertLines: { color: '#444444', alpha: 0.1 },
+                        horzLines: { color: '#444444', alpha: 0.1 },
+                    },
+                    crosshair: {
+                        mode: LightweightCharts.CrosshairMode.Normal,
+                        vertLine: {
+                            color: '#00aaff',
+                            width: 1,
+                            style: 3,
+                            labelBackgroundColor: '#00aaff',
+                            labelVisible: false,
+                        },
+                        horzLine: {
+                            color: '#00aaff',
+                            width: 1,
+                            style: 3,
+                            labelBackgroundColor: '#00aaff',
+                            labelVisible: false,
+                        },
+                    },
+                    rightPriceScale: {
+                        borderColor: '#444444',
+                        textColor: '#cccccc',
+                    },
+                    timeScale: {
+                        borderColor: '#444444',
+                        textColor: '#cccccc',
+                        timeVisible: true,
+                        secondsVisible: false,
+                        rightOffset: 12,
+                        barSpacing: 3,
+                        minBarSpacing: 1,
+                        borderVisible: true,
+                        fixLeftEdge: true,
+                        fixRightEdge: true,
+                        tickMarkFormatter: (time) => {
+                            const date = new Date(time * 1000);
+                            const hours = date.getHours();
+                            const minutes = date.getMinutes();
+                            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        },
+                        crosshairLabelVisible: true,
+                    },
+                    leftPriceScale: {
+                        visible: false,
+                    },
+                    watermark: {
+                        visible: false,
+                    },
+                });
+                
+                // Validate that chart was created successfully
+                if (!chart) {
+                    throw new Error('Chart creation failed - chart object is null or undefined');
+                }
+                
+                console.log('Chart object created:', chart);
+                console.log('Chart methods available:', Object.getOwnPropertyNames(chart));
+
+                // Validate that addCandlestickSeries method exists
+                if (typeof chart.addCandlestickSeries !== 'function') {
+                    throw new Error('chart.addCandlestickSeries is not a function. Chart object may be invalid.');
+                }
+                
+                console.log('Creating candlestick series...');
+                // Create candlestick series with clean styling
+                const candlestickSeries = chart.addCandlestickSeries({
+                    upColor: '#00ff88',
+                    downColor: '#ff4444',
+                    borderDownColor: '#ff4444',
+                    borderUpColor: '#00ff88',
+                    wickDownColor: '#ff4444',
+                    wickUpColor: '#00ff88',
+                    borderVisible: false,
+                    wickThickness: 1,
+                });
+                
+                if (!candlestickSeries) {
+                    throw new Error('Failed to create candlestick series');
+                }
+
+                console.log('Candlestick series created successfully');
+
+                // Prepare data for the chart with proper timestamps
+                console.log('Preparing chart data...');
+                console.log('Sample time data:', chartData.slice(0, 3).map(c => c.time));
+                
+                candlestickData = chartData.map((candle, index) => {
+                    try {
+                        let timeString = candle.time;
+                        let hours, minutes, seconds;
+                        
+                        // Handle different time formats
+                        if (timeString.includes(':')) {
+                            const timeParts = timeString.split(':');
+                            hours = parseInt(timeParts[0]);
+                            minutes = parseInt(timeParts[1]);
+                            seconds = parseInt(timeParts[2]) || 0;
+                        } else if (timeString.length === 6) {
+                            hours = parseInt(timeString.substring(0, 2));
+                            minutes = parseInt(timeString.substring(2, 4));
+                            seconds = parseInt(timeString.substring(4, 6));
+                        } else if (!isNaN(parseInt(timeString)) && parseInt(timeString) < 86400) {
+                            const totalSeconds = parseInt(timeString);
+                            hours = Math.floor(totalSeconds / 3600);
+                            minutes = Math.floor((totalSeconds % 3600) / 60);
+                            seconds = totalSeconds % 60;
+                        } else {
+                            throw new Error(`Unsupported time format: ${timeString}`);
+                        }
+                        
+                        // Validate time components
+                        if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+                            throw new Error(`Invalid time components: hours=${hours}, minutes=${minutes}, seconds=${seconds}`);
+                        }
+                        
+                        // Get the selected date from the new date selector
+                        const selectedDate = getSelectedDate();
+                        
+                        if (!selectedDate) {
+                            const year = document.getElementById('yearSelect').value;
+                            const month = document.getElementById('monthSelect').value;
+                            const day = document.getElementById('daySelect').value;
+                            
+                            console.error('Chart generation failed: No date selected');
+                            console.log('Current dropdown values:', { year, month, day });
+                            
+                            let missingFields = [];
+                            if (!year) missingFields.push('Year');
+                            if (!month) missingFields.push('Month');
+                            if (!day) missingFields.push('Day');
+                            
+                            throw new Error(`Please select ${missingFields.join(', ')} from the dropdown${missingFields.length > 1 ? 's' : ''} above to generate the chart.`);
+                        }
+                        
+                        console.log('Successfully got selected date for chart:', selectedDate);
+                        
+                        // Create a timestamp for the selected date with the given time
+                        const formattedTimeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        const selectedDateTime = new Date(selectedDate + 'T' + formattedTimeString);
+                        
+                        if (isNaN(selectedDateTime.getTime())) {
+                            throw new Error('Invalid date/time format');
+                        }
+                        
+                        const timestamp = Math.floor(selectedDateTime.getTime() / 1000);
+                        
+                        return {
+                            time: timestamp,
+                            open: parseFloat(candle.open),
+                            high: parseFloat(candle.high),
+                            low: parseFloat(candle.low),
+                            close: parseFloat(candle.close)
+                        };
+                    } catch (error) {
+                        console.error(`Error processing data point ${index}:`, error, candle);
+                        throw error;
+                    }
+                });
+
+                console.log('Processed chart data:', candlestickData.slice(0, 3));
+                
+                // Set the data
+                candlestickSeries.setData(candlestickData);
+                console.log('Chart data set successfully');
+
+                // Store reference to current chart BEFORE any other operations
+                currentChart = chart;
+                console.log('Chart reference stored:', currentChart);
+
+                // Handle window resize
+                const resizeObserver = new ResizeObserver(entries => {
+                    if (entries.length === 0 || entries[0].target !== chartContainer) { return; }
+                    const newRect = entries[0].contentRect;
+                    if (currentChart && !currentChart._disposed) {
+                        try {
+                            currentChart.applyOptions({ height: newRect.height, width: newRect.width });
+                        } catch (e) {
+                            console.warn('Resize error:', e);
+                        }
+                    }
+                });
+
+                resizeObserver.observe(chartContainer);
+
+                // Add tooltip for OHLC values
+                let lastValidDataTime = 0;
+                
+                chart.subscribeCrosshairMove(param => {
+                    console.log('=== CROSSHAIR MOVE DEBUG ===');
+                    console.log('Param received:', param);
+                    console.log('Current chart status:', {
+                        hasCurrentChart: !!currentChart,
+                        isDisposed: currentChart ? currentChart._disposed : 'N/A'
+                    });
+                    
+                    if (!currentChart || currentChart._disposed) {
+                        console.log('Chart is disposed or not available, skipping tooltip');
+                        return;
+                    }
+                    
+                    const tooltip = document.getElementById('ohlcTooltip');
+                    console.log('Tooltip element found:', tooltip);
+                    
+                    if (!tooltip) {
+                        console.error('OHLC tooltip element not found!');
+                        return;
+                    }
+                    
+                    // Check if we have ANY useful data
+                    const hasValidPoint = param.point && typeof param.point.x === 'number' && typeof param.point.y === 'number';
+                    const hasValidTime = param.time !== undefined;
+                    const hasValidData = param.seriesData && param.seriesData.size > 0;
+                    
+                    console.log('Validation check:', {
+                        hasValidPoint,
+                        hasValidTime,
+                        hasValidData,
+                        point: param.point,
+                        time: param.time
+                    });
+                    
+                    // If we have ANY valid data, show and update the tooltip
+                    if (hasValidPoint || hasValidTime || hasValidData) {
+                        console.log('Valid data detected, processing tooltip');
+                        
+                        // Update tooltip content if we have time and series data
+                        if (hasValidTime && hasValidData) {
+                            const data = param.seriesData.get(candlestickSeries);
+                            console.log('Series data:', data);
+                            
+                            if (data) {
+                                const timestamp = param.time;
+                                const candleIndex = candlestickData.findIndex(candle => candle.time === timestamp);
+                                console.log('Candle index found:', candleIndex);
+                                
+                                if (candleIndex >= 0 && candleIndex < chartData.length) {
+                                    const candle = chartData[candleIndex];
+                                    console.log('Candle data:', candle);
+                                    
+                                    const date = new Date(timestamp * 1000);
+                                    const hours = date.getHours();
+                                    const minutes = date.getMinutes();
+                                    const seconds = date.getSeconds();
+                                    
+                                    const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                                    
+                                    // Update tooltip content
+                                    const timeElement = document.getElementById('tooltipTime');
+                                    const openElement = document.getElementById('tooltipOpen');
+                                    const highElement = document.getElementById('tooltipHigh');
+                                    const lowElement = document.getElementById('tooltipLow');
+                                    const closeElement = document.getElementById('tooltipClose');
+                                    
+                                    if (timeElement) timeElement.textContent = formattedTime;
+                                    if (openElement) openElement.textContent = candle.open.toFixed(2);
+                                    if (highElement) highElement.textContent = candle.high.toFixed(2);
+                                    if (lowElement) lowElement.textContent = candle.low.toFixed(2);
+                                    if (closeElement) closeElement.textContent = candle.close.toFixed(2);
+                                    
+                                    console.log('Tooltip content updated');
+                                    
+                                    // Remember we had valid data
+                                    lastValidDataTime = Date.now();
+                                }
+                            }
+                        }
+                        
+                        // Always show tooltip when we have any valid data
+                        tooltip.style.display = 'block';
+                        console.log('Tooltip display set to block');
+                        
+                        // Position tooltip if we have point coordinates
+                        if (hasValidPoint) {
+                            const rect = chartContainer.getBoundingClientRect();
+                            const tooltipWidth = 200; // Approximate tooltip width
+                            const tooltipHeight = 120; // Approximate tooltip height
+                            
+                            console.log('Positioning info:', {
+                                rect: rect,
+                                tooltipWidth: tooltipWidth,
+                                tooltipHeight: tooltipHeight,
+                                paramPoint: param.point
+                            });
+                            
+                            // FIXED POSITIONING: Use chart container coordinates, not page coordinates
+                            // param.point.x and param.point.y are relative to the chart container
+                            let leftPos = param.point.x + 80; // Add 80px offset to the right for much better distance
+                            let topPos = param.point.y - 200;  // Add 200px offset above cursor for much better visibility
+                            
+                            // Adjust for tooltip dimensions to keep it on screen
+                            if (leftPos + tooltipWidth > chartContainer.clientWidth) {
+                                // If tooltip would go off right edge, position it to the left of cursor
+                                leftPos = param.point.x - tooltipWidth - 80; // Offset to the left for much better distance
+                            }
+                            
+                            if (topPos < 0) {
+                                // If tooltip would go off top edge, position it below cursor
+                                topPos = param.point.y + 80; // Offset below cursor for much better distance
+                            }
+                            
+                            // Ensure tooltip doesn't go off left or right edges
+                            if (leftPos < 0) leftPos = 10; // Keep minimum offset
+                            if (leftPos + tooltipWidth > chartContainer.clientWidth) leftPos = chartContainer.clientWidth - tooltipWidth - 10; // Keep from right edge
+                            
+                            // Add debugging
+                            console.log('Tooltip positioning:', {
+                                cursorX: param.point.x,
+                                cursorY: param.point.y,
+                                leftPos: leftPos,
+                                topPos: topPos,
+                                tooltipWidth: tooltipWidth,
+                                tooltipHeight: tooltipHeight,
+                                chartWidth: chartContainer.clientWidth,
+                                chartHeight: chartContainer.clientHeight
+                            });
+                            
+                            // Set position relative to tooltip container (interactiveChartContainer)
+                            tooltip.style.left = leftPos + 'px';
+                            tooltip.style.top = topPos + 'px';
+                            
+                            console.log('Tooltip positioned at:', { left: leftPos, top: topPos });
+                        }
+                    } else {
+                        // Only hide if we have NO data AND we're outside the chart area
+                        console.log('No valid data detected, checking if we should hide tooltip');
+                        
+                        // Check if we're completely outside the chart area
+                        const rect = chartContainer.getBoundingClientRect();
+                        const isOutsideChart = !param.point || 
+                                             param.point.x < 0 || 
+                                             param.point.x > rect.width || 
+                                             param.point.y < 0 || 
+                                             param.point.y > rect.height;
+                        
+                        console.log('Outside chart check:', {
+                            hasPoint: !!param.point,
+                            pointX: param.point ? param.point.x : 'N/A',
+                            pointY: param.point ? param.point.y : 'N/A',
+                            chartWidth: rect.width,
+                            chartHeight: rect.height,
+                            isOutsideChart: isOutsideChart
+                        });
+                        
+                        // Hide tooltip immediately when no valid data (not just when outside chart)
+                        if (!hasValidTime && !hasValidData) {
+                            console.log('No valid time or series data, hiding tooltip immediately');
+                            tooltip.style.display = 'none';
+                        } else if (isOutsideChart && (Date.now() - lastValidDataTime) > 500) {
+                            console.log('Outside chart area and no recent valid data, hiding tooltip');
+                            tooltip.style.display = 'none';
+                        } else {
+                            console.log('Keeping tooltip visible (inside chart or recent valid data)');
+                        }
+                    }
+                });
+                
+                console.log('Interactive chart created successfully!');
+                
+            } catch (error) {
+                console.error('Error in createInteractiveCandlestickChart:', error);
+                throw error;
+            }
+        }
+
+        function navigateToDate(targetDate) {
+            const dateParts = targetDate.split('-');
+            
+            // Update selectors
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const daySelect = document.getElementById('daySelect');
+            
+            // Set year first
+            yearSelect.value = dateParts[0];
+            delete yearSelect.dataset.lastYear;
+            updateDateOptions();
+            
+            // Set month and day
+            monthSelect.value = dateParts[1];
+            daySelect.value = dateParts[2];
+            
+            // Update debug display
+            updateDebugDisplay();
+            
+            // Clear any error messages
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+            
+            // Show success message
+            showSuccess(`Successfully navigated to ${targetDate}`);
+        }
+
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.innerHTML = `<div style="color: #00ff88; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); padding: 10px; border-radius: 8px;">✅ ${message}</div>`;
+            errorDiv.style.display = 'block';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+mysql-connector-python==8.2.0
+pandas==2.1.4
+matplotlib==3.8.2
+python-dotenv==1.0.0
+Flask==3.0.0
+Werkzeug==3.0.1 
