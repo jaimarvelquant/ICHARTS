@@ -243,6 +243,42 @@
             color: #cccccc;
         }
 
+        .sma-submenu {
+            margin-left: 20px;
+            margin-top: 5px;
+            padding-left: 10px;
+            border-left: 2px solid rgba(0, 204, 255, 0.3);
+        }
+
+        .sma-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            margin: 2px 0;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .sma-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sma-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+
+        .sma-option label {
+            margin: 0;
+            font-weight: 400;
+            font-size: 14px;
+            cursor: pointer;
+            color: #cccccc;
+        }
+
         .form-group select,
         .form-group input {
             width: 100%;
@@ -539,6 +575,117 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             overflow: hidden;
             z-index: 5;
+        }
+
+        .indicator-settings-buttons {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .indicator-settings-button {
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+            color: #cccccc;
+            cursor: pointer;
+        }
+
+        .indicator-settings-button:hover {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+        }
+
+        .indicator-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .indicator-modal-content {
+            background: #1e1e2f;
+            border-radius: 10px;
+            padding: 20px 22px;
+            width: 320px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .indicator-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .indicator-modal-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #ffffff;
+        }
+
+        .indicator-modal-close {
+            background: none;
+            border: none;
+            color: #cccccc;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .indicator-modal-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        .indicator-modal-row label {
+            font-size: 0.8rem;
+            color: #cccccc;
+            margin-bottom: 4px;
+        }
+
+        .indicator-modal-row input,
+        .indicator-modal-row select {
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #12121e;
+            color: #ffffff;
+            font-size: 0.85rem;
+        }
+
+        .indicator-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .indicator-btn-secondary,
+        .indicator-btn-primary {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .indicator-btn-secondary {
+            background: #333344;
+            color: #cccccc;
+        }
+
+        .indicator-btn-primary {
+            background: #007bff;
+            color: #ffffff;
         }
         
         /* Professional OHLC Tooltip Styling */
@@ -853,6 +1000,34 @@
                                         <span>EMA 200</span>
                                     </div>
                                 </div>
+                                <div class="indicator-option" onclick="toggleIndicator('sma')">
+                                    <span class="indicator-check" id="check_sma">☐</span>
+                                    <span class="indicator-name">SMA</span>
+                                    <span class="indicator-desc">Simple Moving Average</span>
+                                </div>
+                                <div class="sma-submenu" id="smaSubmenu" style="display: none;">
+                                    <div class="sma-option" onclick="toggleSMAOption('sma_20')">
+                                        <span class="indicator-check" id="check_sma_20">☐</span>
+                                        <span>SMA 20</span>
+                                    </div>
+                                    <div class="sma-option" onclick="toggleSMAOption('sma_50')">
+                                        <span class="indicator-check" id="check_sma_50">☐</span>
+                                        <span>SMA 50</span>
+                                    </div>
+                                    <div class="sma-option" onclick="toggleSMAOption('sma_100')">
+                                        <span class="indicator-check" id="check_sma_100">☐</span>
+                                        <span>SMA 100</span>
+                                    </div>
+                                    <div class="sma-option" onclick="toggleSMAOption('sma_200')">
+                                        <span class="indicator-check" id="check_sma_200">☐</span>
+                                        <span>SMA 200</span>
+                                    </div>
+                                </div>
+                                <div class="indicator-option" onclick="toggleIndicator('supertrend')">
+                                    <span class="indicator-check" id="check_supertrend">☐</span>
+                                    <span class="indicator-name">Supertrend</span>
+                                    <span class="indicator-desc">Trend-following volatility indicator</span>
+                                </div>
                             </div>
                         </div>
                         <small class="form-text">Click the icon to select indicators</small>
@@ -884,6 +1059,9 @@
                     </button>
                     <button id="candlestickChartBtn" class="chart-type-btn">
                         🕯️ Candlestick Chart
+                    </button>
+                    <button id="resetChartBtn" class="chart-type-btn">
+                        🔄 Reset Chart
                     </button>
                 </div>
 
@@ -938,24 +1116,51 @@
                                 <span class="tooltip-label">RSI:</span>
                                 <span id="tooltipRSI" class="tooltip-value">0.00</span>
                             </div>
+                            <div class="tooltip-row" id="sma20Row" style="display: none;">
+                                <span class="tooltip-label">SMA 20:</span>
+                                <span id="tooltipSMA20" class="tooltip-value">0.00</span>
+                            </div>
+                            <div class="tooltip-row" id="sma50Row" style="display: none;">
+                                <span class="tooltip-label">SMA 50:</span>
+                                <span id="tooltipSMA50" class="tooltip-value">0.00</span>
+                            </div>
+                            <div class="tooltip-row" id="sma100Row" style="display: none;">
+                                <span class="tooltip-label">SMA 100:</span>
+                                <span id="tooltipSMA100" class="tooltip-value">0.00</span>
+                            </div>
+                            <div class="tooltip-row" id="sma200Row" style="display: none;">
+                                <span class="tooltip-label">SMA 200:</span>
+                                <span id="tooltipSMA200" class="tooltip-value">0.00</span>
+                            </div>
                             <div class="tooltip-row" id="ema20Row" style="display: none;">
-                                <span class="tooltip-label">EMA 20:</span>
+                                <span class="tooltip-label" id="ema20Label">EMA 20:</span>
                                 <span id="tooltipEMA20" class="tooltip-value">0.00</span>
                             </div>
                             <div class="tooltip-row" id="ema50Row" style="display: none;">
-                                <span class="tooltip-label">EMA 50:</span>
+                                <span class="tooltip-label" id="ema50Label">EMA 50:</span>
                                 <span id="tooltipEMA50" class="tooltip-value">0.00</span>
                             </div>
                             <div class="tooltip-row" id="ema100Row" style="display: none;">
-                                <span class="tooltip-label">EMA 100:</span>
+                                <span class="tooltip-label" id="ema100Label">EMA 100:</span>
                                 <span id="tooltipEMA100" class="tooltip-value">0.00</span>
                             </div>
                             <div class="tooltip-row" id="ema200Row" style="display: none;">
-                                <span class="tooltip-label">EMA 200:</span>
+                                <span class="tooltip-label" id="ema200Label">EMA 200:</span>
                                 <span id="tooltipEMA200" class="tooltip-value">0.00</span>
+                            </div>
+                            <div class="tooltip-row" id="supertrendRow" style="display: none;">
+                                <span class="tooltip-label">Supertrend:</span>
+                                <span id="tooltipSupertrend" class="tooltip-value">0.00</span>
                             </div>
                         </div>
                     </div>
+                </div>
+                
+                <div class="indicator-settings-buttons">
+                    <button type="button" class="indicator-settings-button" onclick="openEMAModal()">EMA Settings</button>
+                    <button type="button" class="indicator-settings-button" onclick="openSMAModal()">SMA Settings</button>
+                    <button type="button" class="indicator-settings-button" onclick="openRSIModal()">RSI Settings</button>
+                    <button type="button" class="indicator-settings-button" onclick="openSupertrendModal()">Supertrend Settings</button>
                 </div>
                 
                 <!-- MACD Indicator Panel - Separate Container -->
@@ -973,6 +1178,154 @@
                 
                 <div class="chart-info" id="chartInfo">
                     <!-- Chart information will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="indicator-modal" id="emaSettingsModal">
+            <div class="indicator-modal-content">
+                <div class="indicator-modal-header">
+                    <h3>Exponential Moving Averages</h3>
+                    <button type="button" class="indicator-modal-close" onclick="closeEMAModal()">×</button>
+                </div>
+                <div class="indicator-modal-body">
+                    <div class="indicator-modal-row">
+                        <label for="ema20PeriodInput">EMA 20 Period</label>
+                        <input type="number" id="ema20PeriodInput" value="20" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="ema20ColorInput">EMA 20 Color</label>
+                        <input type="color" id="ema20ColorInput" value="#ff0000">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="ema50PeriodInput">EMA 50 Period</label>
+                        <input type="number" id="ema50PeriodInput" value="50" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="ema50ColorInput">EMA 50 Color</label>
+                        <input type="color" id="ema50ColorInput" value="#00ff00">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="ema100PeriodInput">EMA 100 Period</label>
+                        <input type="number" id="ema100PeriodInput" value="100" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="ema100ColorInput">EMA 100 Color</label>
+                        <input type="color" id="ema100ColorInput" value="#9b59b6">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="ema200PeriodInput">EMA 200 Period</label>
+                        <input type="number" id="ema200PeriodInput" value="200" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="ema200ColorInput">EMA 200 Color</label>
+                        <input type="color" id="ema200ColorInput" value="#e74c3c">
+                    </div>
+                </div>
+                <div class="indicator-modal-footer">
+                    <button type="button" class="indicator-btn-secondary" onclick="closeEMAModal()">Close</button>
+                    <button type="button" class="indicator-btn-primary" onclick="applyEMAModal()">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="indicator-modal" id="smaSettingsModal">
+            <div class="indicator-modal-content">
+                <div class="indicator-modal-header">
+                    <h3>Simple Moving Averages</h3>
+                    <button type="button" class="indicator-modal-close" onclick="closeSMAModal()">×</button>
+                </div>
+                <div class="indicator-modal-body">
+                    <div class="indicator-modal-row">
+                        <label for="sma20PeriodInput">SMA 20 Period</label>
+                        <input type="number" id="sma20PeriodInput" value="20" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma20ColorInput">SMA 20 Color</label>
+                        <input type="color" id="sma20ColorInput" value="#ffaa00">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma50PeriodInput">SMA 50 Period</label>
+                        <input type="number" id="sma50PeriodInput" value="50" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma50ColorInput">SMA 50 Color</label>
+                        <input type="color" id="sma50ColorInput" value="#00ccff">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma100PeriodInput">SMA 100 Period</label>
+                        <input type="number" id="sma100PeriodInput" value="100" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma100ColorInput">SMA 100 Color</label>
+                        <input type="color" id="sma100ColorInput" value="#9b59b6">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma200PeriodInput">SMA 200 Period</label>
+                        <input type="number" id="sma200PeriodInput" value="200" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma200ColorInput">SMA 200 Color</label>
+                        <input type="color" id="sma200ColorInput" value="#ffffff">
+                    </div>
+                </div>
+                <div class="indicator-modal-footer">
+                    <button type="button" class="indicator-btn-secondary" onclick="closeSMAModal()">Close</button>
+                    <button type="button" class="indicator-btn-primary" onclick="applySMAModal()">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="indicator-modal" id="rsiSettingsModal">
+            <div class="indicator-modal-content">
+                <div class="indicator-modal-header">
+                    <h3>Relative Strength Index</h3>
+                    <button type="button" class="indicator-modal-close" onclick="closeRSIModal()">×</button>
+                </div>
+                <div class="indicator-modal-body">
+                    <div class="indicator-modal-row">
+                        <label for="rsiPeriodInput">Periods</label>
+                        <input type="number" id="rsiPeriodInput" value="14" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="rsiColorInput">Line Color</label>
+                        <input type="color" id="rsiColorInput" value="#00ff88">
+                    </div>
+                </div>
+                <div class="indicator-modal-footer">
+                    <button type="button" class="indicator-btn-secondary" onclick="closeRSIModal()">Close</button>
+                    <button type="button" class="indicator-btn-primary" onclick="applyRSIModal()">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="indicator-modal" id="supertrendSettingsModal">
+            <div class="indicator-modal-content">
+                <div class="indicator-modal-header">
+                    <h3>Supertrend</h3>
+                    <button type="button" class="indicator-modal-close" onclick="closeSupertrendModal()">×</button>
+                </div>
+                <div class="indicator-modal-body">
+                    <div class="indicator-modal-row">
+                        <label for="supertrendPeriodInput">ATR Period</label>
+                        <input type="number" id="supertrendPeriodInput" value="10" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="supertrendMultiplierInput">Multiplier</label>
+                        <input type="number" id="supertrendMultiplierInput" value="3" min="0.1" step="0.1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="supertrendUpColorInput">Uptrend Color</label>
+                        <input type="color" id="supertrendUpColorInput" value="#00ff88">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="supertrendDownColorInput">Downtrend Color</label>
+                        <input type="color" id="supertrendDownColorInput" value="#ff4444">
+                    </div>
+                </div>
+                <div class="indicator-modal-footer">
+                    <button type="button" class="indicator-btn-secondary" onclick="closeSupertrendModal()">Close</button>
+                    <button type="button" class="indicator-btn-primary" onclick="applySupertrendModal()">Apply</button>
                 </div>
             </div>
         </div>
@@ -2083,7 +2436,6 @@
                 }
             }
 
-            // Helper function to calculate EMA from an array of values
             function calculateEMAFromValues(values, period) {
                 try {
                     if (values.length === 0) return [];
@@ -2091,7 +2443,6 @@
                     const ema = [];
                     const multiplier = 2 / (period + 1);
                     
-                    // Calculate SMA for the first 'period' values (standard EMA initialization)
                     let sum = 0;
                     for (let i = 0; i < Math.min(period, values.length); i++) {
                         sum += values[i];
@@ -2099,7 +2450,6 @@
                     const initialSMA = sum / Math.min(period, values.length);
                     ema.push(initialSMA);
                     
-                    // Calculate EMA for remaining values
                     for (let i = 1; i < values.length; i++) {
                         const emaValue = (values[i] * multiplier) + (ema[i - 1] * (1 - multiplier));
                         ema.push(emaValue);
@@ -2110,6 +2460,24 @@
                     console.error('Error calculating EMA from values:', error);
                     return [];
                 }
+            }
+
+            function calculateSMA(data, period) {
+                if (!data || data.length === 0 || !period || data.length < period) {
+                    return [];
+                }
+                const result = new Array(data.length).fill(NaN);
+                let sum = 0;
+                for (let i = 0; i < data.length; i++) {
+                    sum += data[i].close;
+                    if (i >= period) {
+                        sum -= data[i - period].close;
+                    }
+                    if (i >= period - 1) {
+                        result[i] = sum / period;
+                    }
+                }
+                return result;
             }
 
             // EMA calculation function
@@ -2282,30 +2650,179 @@
                 }
             }
 
+            let rsiPeriod = 14;
+            let rsiColor = '#00ff88';
+
+            let supertrendPeriod = 10;
+            let supertrendMultiplier = 3;
+            let supertrendUpColor = '#00ff88';
+            let supertrendDownColor = '#ff4444';
+
+            const emaColors = {
+                ema_20: '#ff0000',
+                ema_50: '#00ff00',
+                ema_100: '#9b59b6',
+                ema_200: '#e74c3c',
+            };
+
+            const smaColors = {
+                sma_20: '#ffaa00',
+                sma_50: '#00ccff',
+                sma_100: '#9b59b6',
+                sma_200: '#ffffff',
+            };
+
+            const emaPeriods = {
+                ema_20: 20,
+                ema_50: 50,
+                ema_100: 100,
+                ema_200: 200,
+            };
+
+            const smaPeriods = {
+                sma_20: 20,
+                sma_50: 50,
+                sma_100: 100,
+                sma_200: 200,
+            };
+
+            let currentSupertrendValues = null;
+            let currentSupertrendDirections = null;
+            
+            window.__getEMAConfig = () => ({ periods: { ...emaPeriods }, colors: { ...emaColors } });
+            window.__setEMA = (periods, colors) => { if (periods) Object.assign(emaPeriods, periods); if (colors) Object.assign(emaColors, colors); };
+            window.__getSMAConfig = () => ({ periods: { ...smaPeriods }, colors: { ...smaColors } });
+            window.__setSMA = (periods, colors) => { if (periods) Object.assign(smaPeriods, periods); if (colors) Object.assign(smaColors, colors); };
+            window.__getRSIConfig = () => ({ period: rsiPeriod, color: rsiColor });
+            window.__setRSI = (period, color) => { if (typeof period === 'number' && period > 0) rsiPeriod = period; if (typeof color === 'string') rsiColor = color; };
+            window.__getSupertrendConfig = () => ({ period: supertrendPeriod, multiplier: supertrendMultiplier, upColor: supertrendUpColor, downColor: supertrendDownColor });
+            window.__setSupertrend = (cfg) => { if (!cfg) return; if (typeof cfg.period === 'number' && cfg.period > 0) supertrendPeriod = cfg.period; if (typeof cfg.multiplier === 'number' && cfg.multiplier > 0) supertrendMultiplier = cfg.multiplier; if (typeof cfg.upColor === 'string') supertrendUpColor = cfg.upColor; if (typeof cfg.downColor === 'string') supertrendDownColor = cfg.downColor; };
+
+            function calculateATR(data, period) {
+                if (!data || data.length === 0 || !period || data.length < period + 1) {
+                    return [];
+                }
+                const atr = new Array(data.length).fill(NaN);
+                let prevClose = data[0].close;
+                let trSum = 0;
+                for (let i = 0; i < data.length; i++) {
+                    const high = data[i].high;
+                    const low = data[i].low;
+                    const tr = Math.max(
+                        high - low,
+                        Math.abs(high - prevClose),
+                        Math.abs(low - prevClose)
+                    );
+                    prevClose = data[i].close;
+                    if (i < period) {
+                        trSum += tr;
+                        if (i === period - 1) {
+                            atr[i] = trSum / period;
+                        }
+                    } else {
+                        atr[i] = (atr[i - 1] * (period - 1) + tr) / period;
+                    }
+                }
+                return atr;
+            }
+
+            function calculateSupertrend(data, period, multiplier) {
+                const length = data ? data.length : 0;
+                if (!data || length === 0 || !period || length < period + 1) {
+                    return { values: [], directions: [] };
+                }
+                const atr = calculateATR(data, period);
+                const basicUpper = new Array(length).fill(NaN);
+                const basicLower = new Array(length).fill(NaN);
+                const finalUpper = new Array(length).fill(NaN);
+                const finalLower = new Array(length).fill(NaN);
+                const supertrend = new Array(length).fill(NaN);
+                const directions = new Array(length).fill(0);
+
+                for (let i = 0; i < length; i++) {
+                    if (isNaN(atr[i])) {
+                        continue;
+                    }
+                    const hl2 = (data[i].high + data[i].low) / 2;
+                    basicUpper[i] = hl2 + multiplier * atr[i];
+                    basicLower[i] = hl2 - multiplier * atr[i];
+                }
+
+                for (let i = 0; i < length; i++) {
+                    if (i === 0 || isNaN(basicUpper[i]) || isNaN(basicLower[i])) {
+                        finalUpper[i] = basicUpper[i];
+                        finalLower[i] = basicLower[i];
+                        continue;
+                    }
+                    const prevClose = data[i - 1].close;
+                    const prevFinalUpper = finalUpper[i - 1];
+                    const prevFinalLower = finalLower[i - 1];
+
+                    const prevUpperValid = !isNaN(prevFinalUpper);
+                    const prevLowerValid = !isNaN(prevFinalLower);
+
+                    // pandas_ta-style band update using AND conditions
+                    finalUpper[i] = prevUpperValid
+                        ? ((basicUpper[i] < prevFinalUpper && prevClose > prevFinalUpper) ? basicUpper[i] : prevFinalUpper)
+                        : basicUpper[i];
+
+                    finalLower[i] = prevLowerValid
+                        ? ((basicLower[i] > prevFinalLower && prevClose < prevFinalLower) ? basicLower[i] : prevFinalLower)
+                        : basicLower[i];
+                }
+
+                for (let i = 0; i < length; i++) {
+                    if (i === 0 || isNaN(finalUpper[i]) || isNaN(finalLower[i])) {
+                        supertrend[i] = NaN;
+                        directions[i] = 0;
+                        continue;
+                    }
+                    const close = data[i].close;
+                    if (i === 1 || isNaN(supertrend[i - 1])) {
+                        if (close >= finalLower[i]) {
+                            supertrend[i] = finalLower[i];
+                            directions[i] = 1;
+                        } else {
+                            supertrend[i] = finalUpper[i];
+                            directions[i] = -1;
+                        }
+                        continue;
+                    }
+
+                    if (supertrend[i - 1] === finalUpper[i - 1]) {
+                        if (close <= finalUpper[i]) {
+                            supertrend[i] = finalUpper[i];
+                            directions[i] = -1;
+                        } else {
+                            supertrend[i] = finalLower[i];
+                            directions[i] = 1;
+                        }
+                    } else {
+                        if (close >= finalLower[i]) {
+                            supertrend[i] = finalLower[i];
+                            directions[i] = 1;
+                        } else {
+                            supertrend[i] = finalUpper[i];
+                            directions[i] = -1;
+                        }
+                    }
+                }
+
+                return { values: supertrend, directions: directions };
+            }
+
             // Function to calculate EMA from candlestick data
             function calculateEMA(candlestickData, period) {
                 try {
-                    console.log('Calculating EMA with period:', period, 'for', candlestickData.length, 'data points');
-                    
-                    if (!candlestickData || candlestickData.length === 0) {
-                        console.warn('No data provided for EMA calculation');
+                    if (!candlestickData || candlestickData.length === 0 || !period || candlestickData.length < period) {
                         return [];
                     }
-                    
-                    if (candlestickData.length < period) {
-                        console.warn('Insufficient data for EMA calculation');
-                        return [];
+                    const alpha = 2 / (period + 1);
+                    const emaValues = [candlestickData[0].close];
+                    for (let i = 1; i < candlestickData.length; i++) {
+                        const value = alpha * candlestickData[i].close + (1 - alpha) * emaValues[emaValues.length - 1];
+                        emaValues.push(value);
                     }
-                    
-                    // Extract closing prices
-                    const closePrices = candlestickData.map(candle => candle.close);
-                    
-                    // Calculate EMA using the helper function
-                    const emaValues = calculateEMAFromValues(closePrices, period);
-                    
-                    console.log('EMA calculation completed. Period:', period, 'Values:', emaValues.length);
-                    console.log('EMA range:', Math.min(...emaValues).toFixed(4), 'to', Math.max(...emaValues).toFixed(4));
-                    
                     return emaValues;
                 } catch (error) {
                     console.error('Error in EMA calculation:', error);
@@ -2844,7 +3361,7 @@
                     } else {
                         try {
                             // Calculate RSI
-                            const rsiData = calculateRSI(candlestickData);
+                            const rsiData = calculateRSI(candlestickData, rsiPeriod);
                         console.log('RSI data calculated:', rsiData.length, 'points');
                         console.log('Candlestick data points:', candlestickData.length);
                         console.log('Expected RSI points (candlestickData.length - 1):', candlestickData.length - 1);
@@ -2901,14 +3418,68 @@
                     }
                 }
 
-                // Add EMA 20 indicator if selected
+                function addSmaSeriesIfSelected(indicatorKey, period, color, title) {
+                    if (!selectedIndicators.has(indicatorKey)) {
+                        return;
+                    }
+                    
+                    if (candlestickData.length < period) {
+                        console.log(`Insufficient data for ${indicatorKey}:`, candlestickData.length, 'data points (need', period, ')');
+                        return;
+                    }
+                    
+                    try {
+                        const smaData = calculateSMA(candlestickData, period);
+                        console.log(`${indicatorKey} data calculated:`, smaData.length, 'points');
+                        
+                        if (smaData && smaData.length > 0) {
+                            if (!chart || chart._disposed) {
+                                console.log('Chart disposed, skipping SMA series creation for', indicatorKey);
+                                return;
+                            }
+                            
+                            const smaSeries = chart.addLineSeries({
+                                color: color,
+                                lineWidth: 2,
+                                title: title,
+                                priceLineVisible: false,
+                                lastValueVisible: true,
+                            });
+                            
+                            const smaChartData = candlestickData.map((candle, index) => {
+                                if (index < smaData.length && !isNaN(smaData[index])) {
+                                    return {
+                                        time: candle.time,
+                                        value: smaData[index]
+                                    };
+                                }
+                                return null;
+                            }).filter(item => item !== null);
+                            
+                            console.log(`${indicatorKey} chart data prepared:`, smaChartData.length, 'points');
+                            
+                            smaSeries.setData(smaChartData);
+                            console.log(`${indicatorKey} line added to chart successfully`);
+                        } else {
+                            console.log('No SMA data calculated for', indicatorKey);
+                        }
+                    } catch (error) {
+                        console.error(`Error calculating or plotting ${indicatorKey}:`, error);
+                    }
+                }
+
+                addSmaSeriesIfSelected('sma_20', smaPeriods.sma_20, smaColors.sma_20, `SMA (Close, ${smaPeriods.sma_20})`);
+                addSmaSeriesIfSelected('sma_50', smaPeriods.sma_50, smaColors.sma_50, `SMA (Close, ${smaPeriods.sma_50})`);
+                addSmaSeriesIfSelected('sma_100', smaPeriods.sma_100, smaColors.sma_100, `SMA (Close, ${smaPeriods.sma_100})`);
+                addSmaSeriesIfSelected('sma_200', smaPeriods.sma_200, smaColors.sma_200, `SMA (Close, ${smaPeriods.sma_200})`);
+
                 if (selectedIndicators.has('ema_20')) {
                     console.log('EMA 20 indicator selected, calculating and plotting...');
                     
-                    // Check if we have enough data for EMA 20 (need at least 20 data points)
-                    if (candlestickData.length < 20) {
-                        console.log('Insufficient data for EMA 20:', candlestickData.length, 'data points (need 20)');
-                        console.warn('⚠️ EMA 20 insufficient data: Need at least 20 data points. Current:', candlestickData.length);
+                    const ema20Period = emaPeriods.ema_20;
+                    if (candlestickData.length < ema20Period) {
+                        console.log('Insufficient data for EMA 20:', candlestickData.length, 'data points (need', ema20Period, ')');
+                        console.warn('⚠️ EMA 20 insufficient data: Need at least', ema20Period, 'data points. Current:', candlestickData.length);
                         
                         // Show insufficient data message on the chart
                         try {
@@ -2919,9 +3490,9 @@
                             }
                             
                             const ema20Series = chart.addLineSeries({
-                                color: '#ff0000',
+                                color: emaColors.ema_20,
                                 lineWidth: 2,
-                                title: 'EMA 20 (Insufficient Data)',
+                                title: `EMA ${ema20Period} (Insufficient Data)`,
                                 priceLineVisible: false,
                                 lastValueVisible: false,
                             });
@@ -2946,7 +3517,7 @@
                                 font-weight: bold;
                                 z-index: 1000;
                             `;
-                            insufficientDataText.textContent = `⚠️ EMA 20: Need 20 data points (Current: ${candlestickData.length})`;
+                            insufficientDataText.textContent = `⚠️ EMA 20: Need ${ema20Period} data points (Current: ${candlestickData.length})`;
                             chartContainer.appendChild(insufficientDataText);
                             
                         } catch (error) {
@@ -2954,9 +3525,8 @@
                         }
                     } else {
                         try {
-                            // Calculate EMA 20
-                            const emaData = calculateEMA(candlestickData, 20);
-                        console.log('EMA 20 data calculated:', emaData.length, 'points');
+                            const emaData = calculateEMA(candlestickData, ema20Period);
+                        console.log('EMA 20 data calculated for period', ema20Period, ':', emaData.length, 'points');
                         
                         if (emaData && emaData.length > 0) {
                             // Check if chart is disposed before adding series
@@ -2967,9 +3537,9 @@
                             
                             // Create EMA line series
                             const emaSeries = chart.addLineSeries({
-                                color: '#ff0000',
+                                color: emaColors.ema_20,
                                 lineWidth: 3,
-                                title: 'EMA (Close, 20)',
+                                title: `EMA (Close, ${ema20Period})`,
                                 priceLineVisible: false,
                                 lastValueVisible: true,
                             });
@@ -3006,10 +3576,10 @@
                 if (selectedIndicators.has('ema_50')) {
                     console.log('EMA 50 indicator selected, calculating and plotting...');
                     
-                    // Check if we have enough data for EMA 50 (need at least 50 data points)
-                    if (candlestickData.length < 50) {
-                        console.log('Insufficient data for EMA 50:', candlestickData.length, 'data points (need 50)');
-                        console.warn('⚠️ EMA 50 insufficient data: Need at least 50 data points. Current:', candlestickData.length);
+                    const ema50Period = emaPeriods.ema_50;
+                    if (candlestickData.length < ema50Period) {
+                        console.log('Insufficient data for EMA 50:', candlestickData.length, 'data points (need', ema50Period, ')');
+                        console.warn('⚠️ EMA 50 insufficient data: Need at least', ema50Period, 'data points. Current:', candlestickData.length);
                         
                         // Show insufficient data message on the chart
                         try {
@@ -3020,9 +3590,9 @@
                             }
                             
                             const ema50Series = chart.addLineSeries({
-                                color: '#00ff00',
+                                color: emaColors.ema_50,
                                 lineWidth: 2,
-                                title: 'EMA 50 (Insufficient Data)',
+                                title: `EMA ${ema50Period} (Insufficient Data)`,
                                 priceLineVisible: false,
                                 lastValueVisible: false,
                             });
@@ -3047,7 +3617,7 @@
                                 font-weight: bold;
                                 z-index: 1000;
                             `;
-                            insufficientDataText.textContent = `⚠️ EMA 50: Need 50 data points (Current: ${candlestickData.length})`;
+                            insufficientDataText.textContent = `⚠️ EMA 50: Need ${ema50Period} data points (Current: ${candlestickData.length})`;
                             chartContainer.appendChild(insufficientDataText);
                             
                         } catch (error) {
@@ -3055,9 +3625,8 @@
                         }
                     } else {
                         try {
-                            // Calculate EMA 50
-                            const ema50Data = calculateEMA(candlestickData, 50);
-                        console.log('EMA 50 data calculated:', ema50Data.length, 'points');
+                            const ema50Data = calculateEMA(candlestickData, ema50Period);
+                        console.log('EMA 50 data calculated for period', ema50Period, ':', ema50Data.length, 'points');
                         
                         if (ema50Data && ema50Data.length > 0) {
                             // Check if chart is disposed before adding series
@@ -3068,9 +3637,9 @@
                             
                             // Create EMA 50 line series with different color
                             const ema50Series = chart.addLineSeries({
-                                color: '#00ff00', // Green color to distinguish from EMA 20 (red)
+                                color: emaColors.ema_50,
                                 lineWidth: 2,
-                                title: 'EMA (Close, 50)',
+                                title: `EMA (Close, ${ema50Period})`,
                                 priceLineVisible: false,
                                 lastValueVisible: true,
                             });
@@ -3107,10 +3676,10 @@
                 if (selectedIndicators.has('ema_100')) {
                     console.log('EMA 100 indicator selected, calculating and plotting...');
                     
-                    // Check if we have enough data for EMA 100 (need at least 100 data points)
-                    if (candlestickData.length < 100) {
-                        console.log('Insufficient data for EMA 100:', candlestickData.length, 'data points (need 100)');
-                        console.warn('⚠️ EMA 100 insufficient data: Need at least 100 data points. Current:', candlestickData.length);
+                    const ema100Period = emaPeriods.ema_100;
+                    if (candlestickData.length < ema100Period) {
+                        console.log('Insufficient data for EMA 100:', candlestickData.length, 'data points (need', ema100Period, ')');
+                        console.warn('⚠️ EMA 100 insufficient data: Need at least', ema100Period, 'data points. Current:', candlestickData.length);
                         
                         // Show insufficient data message on the chart
                         try {
@@ -3121,9 +3690,9 @@
                             }
                             
                             const ema100Series = chart.addLineSeries({
-                                color: '#9b59b6',
+                                color: emaColors.ema_100,
                                 lineWidth: 2,
-                                title: 'EMA 100 (Insufficient Data)',
+                                title: `EMA ${ema100Period} (Insufficient Data)`,
                                 priceLineVisible: false,
                                 lastValueVisible: false,
                             });
@@ -3148,7 +3717,7 @@
                                 font-weight: bold;
                                 z-index: 1000;
                             `;
-                            insufficientDataText.textContent = `⚠️ EMA 100: Need 100 data points (Current: ${candlestickData.length})`;
+                            insufficientDataText.textContent = `⚠️ EMA 100: Need ${ema100Period} data points (Current: ${candlestickData.length})`;
                             chartContainer.appendChild(insufficientDataText);
                             
                         } catch (error) {
@@ -3156,9 +3725,8 @@
                         }
                     } else {
                         try {
-                            // Calculate EMA 100
-                            const ema100Data = calculateEMA(candlestickData, 100);
-                        console.log('EMA 100 data calculated:', ema100Data.length, 'points');
+                            const ema100Data = calculateEMA(candlestickData, ema100Period);
+                        console.log('EMA 100 data calculated for period', ema100Period, ':', ema100Data.length, 'points');
                         
                         if (ema100Data && ema100Data.length > 0) {
                             // Check if chart is disposed before adding series
@@ -3169,9 +3737,9 @@
                             
                             // Create EMA 100 line series with different color
                             const ema100Series = chart.addLineSeries({
-                                color: '#9b59b6', // Purple color to distinguish from other EMAs
+                                color: emaColors.ema_100,
                                 lineWidth: 2,
-                                title: 'EMA (Close, 100)',
+                                title: `EMA (Close, ${ema100Period})`,
                                 priceLineVisible: false,
                                 lastValueVisible: true,
                             });
@@ -3208,10 +3776,10 @@
                 if (selectedIndicators.has('ema_200')) {
                     console.log('EMA 200 indicator selected, calculating and plotting...');
                     
-                    // Check if we have enough data for EMA 200 (need at least 200 data points)
-                    if (candlestickData.length < 200) {
-                        console.log('Insufficient data for EMA 200:', candlestickData.length, 'data points (need 200)');
-                        console.warn('⚠️ EMA 200 insufficient data: Need at least 200 data points. Current:', candlestickData.length);
+                    const ema200Period = emaPeriods.ema_200;
+                    if (candlestickData.length < ema200Period) {
+                        console.log('Insufficient data for EMA 200:', candlestickData.length, 'data points (need', ema200Period, ')');
+                        console.warn('⚠️ EMA 200 insufficient data: Need at least', ema200Period, 'data points. Current:', candlestickData.length);
                         
                         // Show insufficient data message on the chart
                         try {
@@ -3222,9 +3790,9 @@
                             }
                             
                             const ema200Series = chart.addLineSeries({
-                                color: '#e74c3c',
+                                color: emaColors.ema_200,
                                 lineWidth: 2,
-                                title: 'EMA 200 (Insufficient Data)',
+                                title: `EMA ${ema200Period} (Insufficient Data)`,
                                 priceLineVisible: false,
                                 lastValueVisible: false,
                             });
@@ -3249,7 +3817,7 @@
                                 font-weight: bold;
                                 z-index: 1000;
                             `;
-                            insufficientDataText.textContent = `⚠️ EMA 200: Need 200 data points (Current: ${candlestickData.length})`;
+                            insufficientDataText.textContent = `⚠️ EMA 200: Need ${ema200Period} data points (Current: ${candlestickData.length})`;
                             chartContainer.appendChild(insufficientDataText);
                             
                         } catch (error) {
@@ -3257,9 +3825,8 @@
                         }
                     } else {
                         try {
-                            // Calculate EMA 200
-                            const ema200Data = calculateEMA(candlestickData, 200);
-                        console.log('EMA 200 data calculated:', ema200Data.length, 'points');
+                            const ema200Data = calculateEMA(candlestickData, ema200Period);
+                        console.log('EMA 200 data calculated for period', ema200Period, ':', ema200Data.length, 'points');
                         
                         if (ema200Data && ema200Data.length > 0) {
                             // Check if chart is disposed before adding series
@@ -3270,9 +3837,9 @@
                             
                             // Create EMA 200 line series with different color
                             const ema200Series = chart.addLineSeries({
-                                color: '#e74c3c', // Red color to distinguish from other EMAs
+                                color: emaColors.ema_200,
                                 lineWidth: 2,
-                                title: 'EMA (Close, 200)',
+                                title: `EMA (Close, ${ema200Period})`,
                                 priceLineVisible: false,
                                 lastValueVisible: true,
                             });
@@ -3301,8 +3868,69 @@
                             console.error('Error calculating or plotting EMA 200:', error);
                         }
                     }
-                } else {
+                    } else {
                     console.log('EMA 200 indicator not selected');
+                }
+                
+                currentSupertrendValues = null;
+                currentSupertrendDirections = null;
+
+                if (selectedIndicators.has('supertrend')) {
+                    try {
+                        const supertrendResult = calculateSupertrend(candlestickData, supertrendPeriod, supertrendMultiplier);
+                        const values = supertrendResult.values;
+                        const directions = supertrendResult.directions;
+                        if (values && directions && values.length === candlestickData.length && directions.length === candlestickData.length) {
+                            const upData = [];
+                            const downData = [];
+                            for (let i = 0; i < candlestickData.length; i++) {
+                                const value = values[i];
+                                const dir = directions[i];
+                                if (isNaN(value) || dir === 0) {
+                                    continue;
+                                }
+                                const point = { time: candlestickData[i].time, value: value };
+                                if (dir > 0) {
+                                    upData.push(point);
+                                } else {
+                                    downData.push(point);
+                                }
+                            }
+                            currentSupertrendValues = values;
+                            currentSupertrendDirections = directions;
+
+                            if (upData.length > 0) {
+                                const supertrendUpSeries = chart.addLineSeries({
+                                    color: supertrendUpColor,
+                                    lineWidth: 2,
+                                    priceLineVisible: false,
+                                    lastValueVisible: false
+                                });
+                                supertrendUpSeries.setData(upData);
+                            }
+                            if (downData.length > 0) {
+                                const supertrendDownSeries = chart.addLineSeries({
+                                    color: supertrendDownColor,
+                                    lineWidth: 2,
+                                    priceLineVisible: false,
+                                    lastValueVisible: false
+                                });
+                                supertrendDownSeries.setData(downData);
+                            }
+                        } else {
+                            console.log('Supertrend calculation returned insufficient data');
+                            currentSupertrendValues = null;
+                            currentSupertrendDirections = null;
+                        }
+                    } catch (error) {
+                        console.error('Error calculating or plotting Supertrend:', error);
+                        currentSupertrendValues = null;
+                        currentSupertrendDirections = null;
+                    }
+                } else {
+                    console.log('Supertrend indicator not selected');
+                    currentSupertrendValues = null;
+                    currentSupertrendDirections = null;
                 }
 
                 // Handle window resize
@@ -3460,50 +4088,120 @@
                             document.getElementById('tooltipHistogram').parentElement.style.display = 'none';
                         }
 
-                        // Calculate and display RSI values for this specific bar (moved outside MACD block)
-                                        if (selectedIndicators.has('rsi')) {
-                                            try {
-                                                // Find the index of this data point in the original chart data
-                                                const dataIndex = candlestickData.findIndex(item => 
-                                                    item.time === data.time
-                                                );
-                                                
-                                                if (dataIndex !== -1) {
-                                                    // Calculate RSI up to this point
-                                                    const rsiData = calculateRSI(candlestickData.slice(0, dataIndex + 1));
-                                                    
-                                                    if (rsiData.length > 0) {
-                                                        const currentRSI = rsiData[rsiData.length - 1];
-                                                        
-                                                        if (currentRSI !== undefined) {
-                                                            document.getElementById('tooltipRSI').textContent = currentRSI.toFixed(2);
-                                                            
-                                                            // Show RSI row
-                                                            document.getElementById('tooltipRSI').parentElement.style.display = 'block';
-                                                        } else {
-                                                            // Hide RSI row if value is undefined
-                                                            document.getElementById('tooltipRSI').parentElement.style.display = 'none';
-                                                        }
-                                                    } else {
-                                                        // Hide RSI row if no data
-                                                        document.getElementById('tooltipRSI').parentElement.style.display = 'none';
-                                                    }
-                                                } else {
-                                                    // Hide RSI row if data point not found
-                                                    document.getElementById('tooltipRSI').parentElement.style.display = 'none';
-                                                }
-                                            } catch (error) {
-                                                console.error('Error calculating RSI for tooltip:', error);
-                                                // Hide RSI row on error
-                                                document.getElementById('tooltipRSI').parentElement.style.display = 'none';
+                        if (selectedIndicators.has('rsi')) {
+                            try {
+                                const dataIndex = candlestickData.findIndex(item => 
+                                    item.time === data.time
+                                );
+                                
+                                if (dataIndex !== -1) {
+                                    const rsiData = calculateRSI(candlestickData.slice(0, dataIndex + 1), rsiPeriod);
+                                    
+                                    if (rsiData.length > 0) {
+                                        const currentRSI = rsiData[rsiData.length - 1];
+                                        
+                                        if (currentRSI !== undefined) {
+                                            document.getElementById('tooltipRSI').textContent = currentRSI.toFixed(2);
+                                            document.getElementById('tooltipRSI').parentElement.style.display = 'block';
+                                        } else {
+                                            document.getElementById('tooltipRSI').parentElement.style.display = 'none';
+                                        }
+                                    } else {
+                                        document.getElementById('tooltipRSI').parentElement.style.display = 'none';
+                                    }
+                                } else {
+                                    document.getElementById('tooltipRSI').parentElement.style.display = 'none';
+                                }
+                            } catch (error) {
+                                console.error('Error calculating RSI for tooltip:', error);
+                                document.getElementById('tooltipRSI').parentElement.style.display = 'none';
+                            }
+                        } else {
+                            document.getElementById('rsiRow').style.display = 'none';
+                        }
+
+                        if (selectedIndicators.has('supertrend')) {
+                            try {
+                                const row = document.getElementById('supertrendRow');
+                                if (!currentSupertrendValues || !candlestickData || currentSupertrendValues.length !== candlestickData.length) {
+                                    if (row) row.style.display = 'none';
+                                } else {
+                                    const dataIndex = candlestickData.findIndex(item => item.time === data.time);
+                                    if (dataIndex !== -1) {
+                                        const value = currentSupertrendValues[dataIndex];
+                                        if (value !== undefined && !isNaN(value)) {
+                                            const valueElement = document.getElementById('tooltipSupertrend');
+                                            if (valueElement) valueElement.textContent = `₹${value.toFixed(2)}`;
+                                            if (row) row.style.display = 'block';
+                                        } else {
+                                            if (row) row.style.display = 'none';
+                                        }
+                                    } else {
+                                        if (row) row.style.display = 'none';
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Error updating Supertrend tooltip:', error);
+                                const row = document.getElementById('supertrendRow');
+                                if (row) row.style.display = 'none';
+                            }
+                        } else {
+                            const row = document.getElementById('supertrendRow');
+                            if (row) row.style.display = 'none';
+                        }
+
+                        function updateSMATooltipRow(indicatorKey, period, rowId, valueId) {
+                            if (!selectedIndicators.has(indicatorKey)) {
+                                const row = document.getElementById(rowId);
+                                if (row) row.style.display = 'none';
+                                return;
+                            }
+                            
+                            try {
+                                const dataIndex = candlestickData.findIndex(item => 
+                                    item.time === data.time
+                                );
+                                
+                                if (dataIndex !== -1) {
+                                    const smaData = calculateSMA(candlestickData.slice(0, dataIndex + 1), period);
+                                    
+                                    if (smaData.length > 0) {
+                                        const currentSMA = smaData[smaData.length - 1];
+                                        
+                                        if (currentSMA !== undefined && !isNaN(currentSMA)) {
+                                            const valueElement = document.getElementById(valueId);
+                                            const rowElement = document.getElementById(rowId);
+                                            if (valueElement) valueElement.textContent = `₹${currentSMA.toFixed(2)}`;
+                                            if (rowElement) {
+                                                const labelElement = rowElement.querySelector('.tooltip-label');
+                                                if (labelElement) labelElement.textContent = `SMA ${period}:`;
+                                                rowElement.style.display = 'block';
                                             }
                                         } else {
-                                            // Hide RSI row if RSI not selected
-                                            document.getElementById('rsiRow').style.display = 'none';
+                                            const rowElement = document.getElementById(rowId);
+                                            if (rowElement) rowElement.style.display = 'none';
                                         }
-                                        
-                        // Calculate and display EMA 20 for this specific bar (moved outside MACD block)
-                                        if (selectedIndicators.has('ema_20')) {
+                                    } else {
+                                        const rowElement = document.getElementById(rowId);
+                                        if (rowElement) rowElement.style.display = 'none';
+                                    }
+                                } else {
+                                    const rowElement = document.getElementById(rowId);
+                                    if (rowElement) rowElement.style.display = 'none';
+                                }
+                            } catch (error) {
+                                console.error(`Error calculating ${indicatorKey} for tooltip:`, error);
+                                const rowElement = document.getElementById(rowId);
+                                if (rowElement) rowElement.style.display = 'none';
+                            }
+                        }
+
+                        updateSMATooltipRow('sma_20', smaPeriods.sma_20, 'sma20Row', 'tooltipSMA20');
+                        updateSMATooltipRow('sma_50', smaPeriods.sma_50, 'sma50Row', 'tooltipSMA50');
+                        updateSMATooltipRow('sma_100', smaPeriods.sma_100, 'sma100Row', 'tooltipSMA100');
+                        updateSMATooltipRow('sma_200', smaPeriods.sma_200, 'sma200Row', 'tooltipSMA200');
+                        
+                        if (selectedIndicators.has('ema_20')) {
                             try {
                                 // Find the index of this data point in the original chart data
                                 const dataIndex = candlestickData.findIndex(item => 
@@ -3511,33 +4209,39 @@
                                 );
                                 
                                 if (dataIndex !== -1) {
-                                    // Calculate EMA 20 up to this point
-                                    const emaData = calculateEMA(candlestickData.slice(0, dataIndex + 1), 20);
+                                    const emaData = calculateEMA(candlestickData.slice(0, dataIndex + 1), emaPeriods.ema_20);
                                                 
                                                 if (emaData.length > 0) {
                                                     const currentEMA = emaData[emaData.length - 1];
                                                     
                                                     if (currentEMA !== undefined && !isNaN(currentEMA)) {
-                                            document.getElementById('tooltipEMA20').textContent = `₹${currentEMA.toFixed(2)}`;
-                                                        document.getElementById('ema20Row').style.display = 'block';
+                                                        const label = document.getElementById('ema20Label');
+                                                        const row = document.getElementById('ema20Row');
+                                                        document.getElementById('tooltipEMA20').textContent = `₹${currentEMA.toFixed(2)}`;
+                                                        if (label) label.textContent = `EMA ${emaPeriods.ema_20}:`;
+                                                        if (row) row.style.display = 'block';
                                                         console.log('EMA 20 tooltip updated:', currentEMA.toFixed(2));
                                                     } else {
-                                                        document.getElementById('ema20Row').style.display = 'none';
+                                                        const row = document.getElementById('ema20Row');
+                                                        if (row) row.style.display = 'none';
                                                     }
                                                 } else {
-                                        document.getElementById('ema20Row').style.display = 'none';
-                                    }
-                                } else {
-                                                    document.getElementById('ema20Row').style.display = 'none';
+                                                    const row = document.getElementById('ema20Row');
+                                                    if (row) row.style.display = 'none';
                                                 }
-                                            } catch (error) {
+                                } else {
+                                    const row = document.getElementById('ema20Row');
+                                    if (row) row.style.display = 'none';
+                                }
+                            } catch (error) {
                                 console.error('Error calculating EMA 20 for tooltip:', error);
-                                                document.getElementById('ema20Row').style.display = 'none';
-                                            }
-                                        } else {
-                            // Hide EMA 20 row if not selected
-                                            document.getElementById('ema20Row').style.display = 'none';
-                                        }
+                                const row = document.getElementById('ema20Row');
+                                if (row) row.style.display = 'none';
+                            }
+                        } else {
+                            const row = document.getElementById('ema20Row');
+                            if (row) row.style.display = 'none';
+                        }
 
                         // Calculate and display EMA 50 for this specific bar
                         if (selectedIndicators.has('ema_50')) {
@@ -3548,24 +4252,29 @@
                                 );
                                 
                                 if (dataIndex !== -1) {
-                                    // Calculate EMA 50 up to this point
-                                    const ema50Data = calculateEMA(candlestickData.slice(0, dataIndex + 1), 50);
+                                    const ema50Data = calculateEMA(candlestickData.slice(0, dataIndex + 1), emaPeriods.ema_50);
                                     
                                     if (ema50Data.length > 0) {
                                         const currentEMA50 = ema50Data[ema50Data.length - 1];
                                         
                                         if (currentEMA50 !== undefined && !isNaN(currentEMA50)) {
+                                            const label = document.getElementById('ema50Label');
+                                            const row = document.getElementById('ema50Row');
                                             document.getElementById('tooltipEMA50').textContent = `₹${currentEMA50.toFixed(2)}`;
-                                            document.getElementById('ema50Row').style.display = 'block';
+                                            if (label) label.textContent = `EMA ${emaPeriods.ema_50}:`;
+                                            if (row) row.style.display = 'block';
                                             console.log('EMA 50 tooltip updated:', currentEMA50.toFixed(2));
+                                        } else {
+                                            const row = document.getElementById('ema50Row');
+                                            if (row) row.style.display = 'none';
+                                        }
                                     } else {
-                                            document.getElementById('ema50Row').style.display = 'none';
+                                        const row = document.getElementById('ema50Row');
+                                        if (row) row.style.display = 'none';
                                     }
                                 } else {
-                                        document.getElementById('ema50Row').style.display = 'none';
-                                    }
-                                } else {
-                                    document.getElementById('ema50Row').style.display = 'none';
+                                    const row = document.getElementById('ema50Row');
+                                    if (row) row.style.display = 'none';
                                 }
                             } catch (error) {
                                 console.error('Error calculating EMA 50 for tooltip:', error);
@@ -3585,24 +4294,29 @@
                                 );
                                 
                                 if (dataIndex !== -1) {
-                                    // Calculate EMA 100 up to this point
-                                    const ema100Data = calculateEMA(candlestickData.slice(0, dataIndex + 1), 100);
+                                    const ema100Data = calculateEMA(candlestickData.slice(0, dataIndex + 1), emaPeriods.ema_100);
                                     
                                     if (ema100Data.length > 0) {
                                         const currentEMA100 = ema100Data[ema100Data.length - 1];
                                         
                                         if (currentEMA100 !== undefined && !isNaN(currentEMA100)) {
+                                            const label = document.getElementById('ema100Label');
+                                            const row = document.getElementById('ema100Row');
                                             document.getElementById('tooltipEMA100').textContent = `₹${currentEMA100.toFixed(2)}`;
-                                            document.getElementById('ema100Row').style.display = 'block';
+                                            if (label) label.textContent = `EMA ${emaPeriods.ema_100}:`;
+                                            if (row) row.style.display = 'block';
                                             console.log('EMA 100 tooltip updated:', currentEMA100.toFixed(2));
                                         } else {
-                                            document.getElementById('ema100Row').style.display = 'none';
+                                            const row = document.getElementById('ema100Row');
+                                            if (row) row.style.display = 'none';
                                         }
                                     } else {
-                                        document.getElementById('ema100Row').style.display = 'none';
+                                        const row = document.getElementById('ema100Row');
+                                        if (row) row.style.display = 'none';
                                     }
                                 } else {
-                                    document.getElementById('ema100Row').style.display = 'none';
+                                    const row = document.getElementById('ema100Row');
+                                    if (row) row.style.display = 'none';
                                 }
                             } catch (error) {
                                 console.error('Error calculating EMA 100 for tooltip:', error);
@@ -3622,24 +4336,29 @@
                                 );
                                 
                                 if (dataIndex !== -1) {
-                                    // Calculate EMA 200 up to this point
-                                    const ema200Data = calculateEMA(candlestickData.slice(0, dataIndex + 1), 200);
+                                    const ema200Data = calculateEMA(candlestickData.slice(0, dataIndex + 1), emaPeriods.ema_200);
                                     
                                     if (ema200Data.length > 0) {
                                         const currentEMA200 = ema200Data[ema200Data.length - 1];
                                         
                                         if (currentEMA200 !== undefined && !isNaN(currentEMA200)) {
+                                            const label = document.getElementById('ema200Label');
+                                            const row = document.getElementById('ema200Row');
                                             document.getElementById('tooltipEMA200').textContent = `₹${currentEMA200.toFixed(2)}`;
-                                            document.getElementById('ema200Row').style.display = 'block';
+                                            if (label) label.textContent = `EMA ${emaPeriods.ema_200}:`;
+                                            if (row) row.style.display = 'block';
                                             console.log('EMA 200 tooltip updated:', currentEMA200.toFixed(2));
                                         } else {
-                                            document.getElementById('ema200Row').style.display = 'none';
+                                            const row = document.getElementById('ema200Row');
+                                            if (row) row.style.display = 'none';
                                         }
                                     } else {
-                                        document.getElementById('ema200Row').style.display = 'none';
+                                        const row = document.getElementById('ema200Row');
+                                        if (row) row.style.display = 'none';
                                     }
                                 } else {
-                                    document.getElementById('ema200Row').style.display = 'none';
+                                    const row = document.getElementById('ema200Row');
+                                    if (row) row.style.display = 'none';
                                 }
                             } catch (error) {
                                 console.error('Error calculating EMA 200 for tooltip:', error);
@@ -4363,7 +5082,7 @@
                                 
                                 // Add RSI line series
                                 const rsiSeries = rsiChart.addLineSeries({
-                                    color: '#00ff88',
+                                    color: rsiColor,
                                     lineWidth: 2,
                                     priceLineVisible: false,
                                     lastValueVisible: true,
@@ -4372,7 +5091,7 @@
                                 // Prepare RSI data (RSI starts from index 1, so we need to align properly)
                                 const rsiChartData = [];
                                 // RSI data length should be candlestickData.length - 1 (since we skip first point)
-                                const period = 14; // RSI period
+                                const period = rsiPeriod;
                                 const expectedRSILength = candlestickData.length - period;
                                 
                                 console.log('RSI Data Alignment Debug:');
@@ -5298,6 +6017,92 @@
                 timeframeDisplay.style.display = 'block';
             }
 
+            async function resetChartView() {
+                if (currentChart) {
+                    try {
+                        if (typeof currentChart.remove === 'function' && !currentChart._disposed) {
+                            currentChart.remove();
+                        } else if (typeof currentChart.destroy === 'function') {
+                            currentChart.destroy();
+                        }
+                    } catch (e) {
+                    } finally {
+                        currentChart = null;
+                    }
+                }
+                
+                if (window.macdChartInstance) {
+                    try {
+                        if (typeof window.macdChartInstance.remove === 'function' && !window.macdChartInstance._disposed) {
+                            window.macdChartInstance.remove();
+                        } else if (typeof window.macdChartInstance.destroy === 'function') {
+                            window.macdChartInstance.destroy();
+                        }
+                    } catch (e) {
+                    } finally {
+                        window.macdChartInstance = null;
+                    }
+                }
+                
+                if (window.rsiChartInstance) {
+                    try {
+                        if (typeof window.rsiChartInstance.remove === 'function' && !window.rsiChartInstance._disposed) {
+                            window.rsiChartInstance.remove();
+                        } else if (typeof window.rsiChartInstance.destroy === 'function') {
+                            window.rsiChartInstance.destroy();
+                        }
+                    } catch (e) {
+                    } finally {
+                        window.rsiChartInstance = null;
+                    }
+                }
+                
+                selectedIndicators = new Set();
+                const indicatorCount = document.getElementById('indicatorCount');
+                if (indicatorCount) {
+                    indicatorCount.textContent = '0';
+                }
+                const indicatorKeys = ['vwap', 'macd', 'rsi'];
+                indicatorKeys.forEach(key => {
+                    const checkEl = document.getElementById('check_' + key);
+                    if (checkEl) {
+                        checkEl.textContent = '☐';
+                    }
+                });
+                
+                const candlestickContainer = document.querySelector('.candlestick-chart-container');
+                const interactiveContainer = document.querySelector('.interactive-chart-container');
+                if (candlestickContainer) {
+                    candlestickContainer.style.display = 'none';
+                }
+                if (interactiveContainer) {
+                    interactiveContainer.style.display = 'block';
+                }
+                
+                const lineBtn = document.getElementById('lineChartBtn');
+                const candlestickBtn = document.getElementById('candlestickChartBtn');
+                if (lineBtn && candlestickBtn) {
+                    lineBtn.classList.add('active');
+                    candlestickBtn.classList.remove('active');
+                }
+                
+                isLineChartActive = true;
+                isChartDisposed = false;
+                
+                const timeframeInput = document.getElementById('timeframe');
+                if (timeframeInput) {
+                    timeframeInput.value = '1';
+                    updateTimeframeDisplay();
+                }
+                
+                if (currentChartData && currentChartTitle) {
+                    try {
+                        await createInteractiveChart(currentChartData, currentChartTitle, 'line');
+                    } catch (e) {
+                    }
+                }
+            }
+            
             // Add click event listeners for chart type buttons
             document.getElementById('lineChartBtn').addEventListener('click', function() {
                 console.log('Line chart button clicked');
@@ -5308,6 +6113,13 @@
                 console.log('Candlestick chart button clicked');
                 switchChartType('candlestick');
             });
+            
+            const resetBtn = document.getElementById('resetChartBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    resetChartView();
+                });
+            }
             
             // Add event listener for timeframe input
             document.getElementById('timeframe').addEventListener('change', function() {
@@ -5323,6 +6135,238 @@
 
         // Icon-based indicator selection functions
         let selectedIndicators = new Set();
+
+        function openEMAModal() {
+            const modal = document.getElementById('emaSettingsModal');
+            if (modal) {
+                const cfg = window.__getEMAConfig ? window.__getEMAConfig() : null;
+                const p20 = document.getElementById('ema20PeriodInput');
+                const p50 = document.getElementById('ema50PeriodInput');
+                const p100 = document.getElementById('ema100PeriodInput');
+                const p200 = document.getElementById('ema200PeriodInput');
+                const c20 = document.getElementById('ema20ColorInput');
+                const c50 = document.getElementById('ema50ColorInput');
+                const c100 = document.getElementById('ema100ColorInput');
+                const c200 = document.getElementById('ema200ColorInput');
+                if (cfg) {
+                    if (p20) p20.value = cfg.periods.ema_20;
+                    if (p50) p50.value = cfg.periods.ema_50;
+                    if (p100) p100.value = cfg.periods.ema_100;
+                    if (p200) p200.value = cfg.periods.ema_200;
+                    if (c20) c20.value = cfg.colors.ema_20;
+                    if (c50) c50.value = cfg.colors.ema_50;
+                    if (c100) c100.value = cfg.colors.ema_100;
+                    if (c200) c200.value = cfg.colors.ema_200;
+                }
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeEMAModal() {
+            const modal = document.getElementById('emaSettingsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function applyEMAModal() {
+            const p20 = document.getElementById('ema20PeriodInput');
+            const p50 = document.getElementById('ema50PeriodInput');
+            const p100 = document.getElementById('ema100PeriodInput');
+            const p200 = document.getElementById('ema200PeriodInput');
+            const c20 = document.getElementById('ema20ColorInput');
+            const c50 = document.getElementById('ema50ColorInput');
+            const c100 = document.getElementById('ema100ColorInput');
+            const c200 = document.getElementById('ema200ColorInput');
+            const periods = {};
+            const colors = {};
+            if (p20 && p20.value) {
+                const v = parseInt(p20.value, 10);
+                if (!isNaN(v) && v > 0) periods.ema_20 = v;
+            }
+            if (p50 && p50.value) {
+                const v = parseInt(p50.value, 10);
+                if (!isNaN(v) && v > 0) periods.ema_50 = v;
+            }
+            if (p100 && p100.value) {
+                const v = parseInt(p100.value, 10);
+                if (!isNaN(v) && v > 0) periods.ema_100 = v;
+            }
+            if (p200 && p200.value) {
+                const v = parseInt(p200.value, 10);
+                if (!isNaN(v) && v > 0) periods.ema_200 = v;
+            }
+            if (c20 && c20.value) colors.ema_20 = c20.value;
+            if (c50 && c50.value) colors.ema_50 = c50.value;
+            if (c100 && c100.value) colors.ema_100 = c100.value;
+            if (c200 && c200.value) colors.ema_200 = c200.value;
+            if (window.__setEMA) window.__setEMA(periods, colors);
+            closeEMAModal();
+            refreshChartAfterSettings();
+        }
+
+        function openSMAModal() {
+            const modal = document.getElementById('smaSettingsModal');
+            if (modal) {
+                const cfg = window.__getSMAConfig ? window.__getSMAConfig() : null;
+                const p20 = document.getElementById('sma20PeriodInput');
+                const p50 = document.getElementById('sma50PeriodInput');
+                const p100 = document.getElementById('sma100PeriodInput');
+                const p200 = document.getElementById('sma200PeriodInput');
+                const c20 = document.getElementById('sma20ColorInput');
+                const c50 = document.getElementById('sma50ColorInput');
+                const c100 = document.getElementById('sma100ColorInput');
+                const c200 = document.getElementById('sma200ColorInput');
+                if (cfg) {
+                    if (p20) p20.value = cfg.periods.sma_20;
+                    if (p50) p50.value = cfg.periods.sma_50;
+                    if (p100) p100.value = cfg.periods.sma_100;
+                    if (p200) p200.value = cfg.periods.sma_200;
+                    if (c20) c20.value = cfg.colors.sma_20;
+                    if (c50) c50.value = cfg.colors.sma_50;
+                    if (c100) c100.value = cfg.colors.sma_100;
+                    if (c200) c200.value = cfg.colors.sma_200;
+                }
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeSMAModal() {
+            const modal = document.getElementById('smaSettingsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function applySMAModal() {
+            const p20 = document.getElementById('sma20PeriodInput');
+            const p50 = document.getElementById('sma50PeriodInput');
+            const p100 = document.getElementById('sma100PeriodInput');
+            const p200 = document.getElementById('sma200PeriodInput');
+            const c20 = document.getElementById('sma20ColorInput');
+            const c50 = document.getElementById('sma50ColorInput');
+            const c100 = document.getElementById('sma100ColorInput');
+            const c200 = document.getElementById('sma200ColorInput');
+            const periods = {};
+            const colors = {};
+            if (p20 && p20.value) {
+                const v = parseInt(p20.value, 10);
+                if (!isNaN(v) && v > 0) periods.sma_20 = v;
+            }
+            if (p50 && p50.value) {
+                const v = parseInt(p50.value, 10);
+                if (!isNaN(v) && v > 0) periods.sma_50 = v;
+            }
+            if (p100 && p100.value) {
+                const v = parseInt(p100.value, 10);
+                if (!isNaN(v) && v > 0) periods.sma_100 = v;
+            }
+            if (p200 && p200.value) {
+                const v = parseInt(p200.value, 10);
+                if (!isNaN(v) && v > 0) periods.sma_200 = v;
+            }
+            if (c20 && c20.value) colors.sma_20 = c20.value;
+            if (c50 && c50.value) colors.sma_50 = c50.value;
+            if (c100 && c100.value) colors.sma_100 = c100.value;
+            if (c200 && c200.value) colors.sma_200 = c200.value;
+            if (window.__setSMA) window.__setSMA(periods, colors);
+            closeSMAModal();
+            refreshChartAfterSettings();
+        }
+
+        function openRSIModal() {
+            const modal = document.getElementById('rsiSettingsModal');
+            const periodInput = document.getElementById('rsiPeriodInput');
+            const colorInput = document.getElementById('rsiColorInput');
+            const cfg = window.__getRSIConfig ? window.__getRSIConfig() : null;
+            if (periodInput && cfg) {
+                periodInput.value = cfg.period;
+            }
+            if (colorInput && cfg) {
+                colorInput.value = cfg.color;
+            }
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeRSIModal() {
+            const modal = document.getElementById('rsiSettingsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function applyRSIModal() {
+            const periodInput = document.getElementById('rsiPeriodInput');
+            const colorInput = document.getElementById('rsiColorInput');
+            if (periodInput || colorInput) {
+                const periodValue = periodInput ? parseInt(periodInput.value, 10) : undefined;
+                const colorValue = colorInput ? colorInput.value : undefined;
+                if (window.__setRSI) window.__setRSI(periodValue, colorValue);
+            }
+            closeRSIModal();
+            refreshChartAfterSettings();
+        }
+
+        function openSupertrendModal() {
+            const modal = document.getElementById('supertrendSettingsModal');
+            const periodInput = document.getElementById('supertrendPeriodInput');
+            const multiplierInput = document.getElementById('supertrendMultiplierInput');
+            const upColorInput = document.getElementById('supertrendUpColorInput');
+            const downColorInput = document.getElementById('supertrendDownColorInput');
+            const cfg = window.__getSupertrendConfig ? window.__getSupertrendConfig() : null;
+            if (cfg) {
+                if (periodInput) periodInput.value = cfg.period;
+                if (multiplierInput) multiplierInput.value = cfg.multiplier;
+                if (upColorInput) upColorInput.value = cfg.upColor;
+                if (downColorInput) downColorInput.value = cfg.downColor;
+            }
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeSupertrendModal() {
+            const modal = document.getElementById('supertrendSettingsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function applySupertrendModal() {
+            const periodInput = document.getElementById('supertrendPeriodInput');
+            const multiplierInput = document.getElementById('supertrendMultiplierInput');
+            const upColorInput = document.getElementById('supertrendUpColorInput');
+            const downColorInput = document.getElementById('supertrendDownColorInput');
+            const cfg = {};
+            if (periodInput) {
+                const periodValue = parseInt(periodInput.value, 10);
+                if (!isNaN(periodValue) && periodValue > 0) cfg.period = periodValue;
+            }
+            if (multiplierInput) {
+                const multiplierValue = parseFloat(multiplierInput.value);
+                if (!isNaN(multiplierValue) && multiplierValue > 0) cfg.multiplier = multiplierValue;
+            }
+            if (upColorInput && upColorInput.value) {
+                cfg.upColor = upColorInput.value;
+            }
+            if (downColorInput && downColorInput.value) {
+                cfg.downColor = downColorInput.value;
+            }
+            if (window.__setSupertrend) window.__setSupertrend(cfg);
+            closeSupertrendModal();
+            refreshChartAfterSettings();
+        }
+        
+        function refreshChartAfterSettings() {
+            const lineBtn = document.getElementById('lineChartBtn');
+            const candlestickBtn = document.getElementById('candlestickChartBtn');
+            const target = (lineBtn && lineBtn.classList.contains('active')) ? lineBtn : candlestickBtn;
+            if (target && typeof target.click === 'function') {
+                target.click();
+            }
+        }
 
         function toggleIndicatorMenu() {
             const dropdown = document.getElementById('indicatorDropdown');
@@ -5350,6 +6394,7 @@
         function toggleIndicator(indicator) {
             const checkElement = document.getElementById(`check_${indicator}`);
             const emaSubmenu = document.getElementById('emaSubmenu');
+            const smaSubmenu = document.getElementById('smaSubmenu');
             
             if (selectedIndicators.has(indicator)) {
                 selectedIndicators.delete(indicator);
@@ -5364,6 +6409,15 @@
                         if (emaCheck) emaCheck.textContent = '☐';
                     });
                 }
+
+                if (indicator === 'sma') {
+                    smaSubmenu.style.display = 'none';
+                    ['sma_20', 'sma_50', 'sma_100', 'sma_200'].forEach(sma => {
+                        selectedIndicators.delete(sma);
+                        const smaCheck = document.getElementById(`check_${sma}`);
+                        if (smaCheck) smaCheck.textContent = '☐';
+                    });
+                }
             } else {
                 selectedIndicators.add(indicator);
                 checkElement.textContent = '☑';
@@ -5371,6 +6425,10 @@
                 // If EMA is checked, show submenu
                 if (indicator === 'ema') {
                     emaSubmenu.style.display = 'block';
+                }
+
+                if (indicator === 'sma') {
+                    smaSubmenu.style.display = 'block';
                 }
             }
             
@@ -5385,6 +6443,20 @@
                 checkElement.textContent = '☐';
             } else {
                 selectedIndicators.add(emaOption);
+                checkElement.textContent = '☑';
+            }
+            
+            updateIndicatorCount();
+        }
+
+        function toggleSMAOption(smaOption) {
+            const checkElement = document.getElementById(`check_${smaOption}`);
+            
+            if (selectedIndicators.has(smaOption)) {
+                selectedIndicators.delete(smaOption);
+                checkElement.textContent = '☐';
+            } else {
+                selectedIndicators.add(smaOption);
                 checkElement.textContent = '☑';
             }
             
@@ -5408,4 +6480,3 @@
     </script>
 </body>
 </html>
-

@@ -382,6 +382,9 @@
 
         <div class="chart-container" id="chartContainer" style="display: none;">
             <h2 id="chartTitle"></h2>
+            <button type="button" class="btn btn-secondary" id="resetChartBtn" style="margin-bottom: 10px;" onclick="resetMainChart()">
+                🔄 Reset Chart
+            </button>
             <div id="chartImage"></div>
             
             <!-- Custom OHLC Tooltip -->
@@ -702,6 +705,22 @@
                 document.getElementById('loading').style.display = 'none';
                 showError('Network error: ' + error.message);
             });
+        }
+
+        function resetMainChart() {
+            clearChartState();
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+            const chartContainer = document.getElementById('chartContainer');
+            if (chartContainer) {
+                chartContainer.style.display = 'none';
+            }
+            const chartImage = document.getElementById('chartImage');
+            if (chartImage) {
+                chartImage.innerHTML = '';
+            }
         }
 
         function displayInteractiveChart(data, chartType) {

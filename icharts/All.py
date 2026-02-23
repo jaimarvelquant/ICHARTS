@@ -754,6 +754,39 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
         return None
     
     try:
+        # Use a simpler, battle-tested path for NIFTY spot data to avoid
+        # complex filtering issues and ensure reliable resampling
+        if data_type == 'nifty_cash':
+            print(f"DEBUG: Using simple resampling path for nifty_cash ({len(df)} records, interval {interval_minutes}min)")
+            df_simple = df.copy()
+            df_simple['datetime'] = pd.to_datetime(df_simple['date_readable'] + ' ' + df_simple['time_readable'])
+            df_simple.set_index('datetime', inplace=True)
+            
+            df_scaled = df_simple.copy()
+            df_scaled['open'] = df_simple['open'] / 100
+            df_scaled['high'] = df_simple['high'] / 100
+            df_scaled['low'] = df_simple['low'] / 100
+            df_scaled['close'] = df_simple['close'] / 100
+            
+            resampled = df_scaled.resample(f'{interval_minutes}min').agg({
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last'
+            }).dropna()
+            
+            if len(resampled) == 0:
+                print("DEBUG: Simple resampling produced no data for nifty_cash")
+                return None
+            
+            resampled.reset_index(inplace=True)
+            resampled['time_readable'] = resampled['datetime'].dt.strftime('%H:%M')
+            resampled['date_readable'] = resampled['datetime'].dt.strftime('%Y-%m-%d')
+            resampled['time'] = resampled['datetime'].dt.hour * 3600 + resampled['datetime'].dt.minute * 60
+            
+            print(f"DEBUG: Simple resampling for nifty_cash successful: {len(resampled)} records")
+            return resampled
+
         print(f"DEBUG: Resampling {len(df)} records to {interval_minutes}-minute intervals")
         
         # Create datetime index for resampling
@@ -772,14 +805,11 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
         # Scale down OHLC values by dividing by 100 (convert from paise to rupees)
         df_scaled = df.copy()
         
-        # Check if data is already in rupees (for options data)
         if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
-            # For options data, check if values are already in rupees (small values)
             sample_values = df['open'].head(5).tolist()
             print(f"DEBUG: Options sample values: {sample_values}")
             if all(val < 1000 for val in sample_values):
                 print("DEBUG: Options data already in rupees, no scaling needed")
-                # Data is already in rupees, no scaling needed
                 df_scaled['open'] = df['open']
                 df_scaled['high'] = df['high']
                 df_scaled['low'] = df['low']
@@ -791,12 +821,11 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
                 df_scaled['low'] = df['low'] / 100
                 df_scaled['close'] = df['close'] / 100
         else:
-            # For cash/future data, always scale by 100
             print("DEBUG: Cash/Future data scaling by 100")
-        df_scaled['open'] = df['open'] / 100
-        df_scaled['high'] = df['high'] / 100
-        df_scaled['low'] = df['low'] / 100
-        df_scaled['close'] = df['close'] / 100
+            df_scaled['open'] = df['open'] / 100
+            df_scaled['high'] = df['high'] / 100
+            df_scaled['low'] = df['low'] / 100
+            df_scaled['close'] = df['close'] / 100
         
         # Debug: Print scaling results
         print(f"DEBUG: Scaling results (first 3 rows):")
@@ -1083,8 +1112,12 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
                     print("DEBUG: No 12:05:00 data found in resampled data")
         
         if len(resampled) == 0:
-            print("DEBUG: No data after resampling!")
-            return None
+            if interval_minutes == 1 and len(df_scaled) > 0:
+                print("DEBUG: No data after resampling, using original scaled data for 1-minute interval")
+                resampled = df_scaled.copy()
+            else:
+                print("DEBUG: No data after resampling!")
+                return None
             
         # Reset index to get datetime as a column
         resampled.reset_index(inplace=True)
@@ -1126,6 +1159,9 @@ def resample_straddle_data(df, interval_minutes):
     """Resample straddle data to specified interval"""
     if df is None or len(df) == 0:
         return None
+    
+    if interval_minutes == 1:
+        return df
     
     try:
         print(f"DEBUG: Resampling straddle data {len(df)} records to {interval_minutes}-minute intervals")
@@ -1841,9 +1877,8 @@ def generate_chart():
                 min_price_threshold = 0.01
                 max_price_threshold = max(10000, max_val * 2)  # Very permissive
         else:
-            # For cash/future data, use higher thresholds
-            min_price_threshold = 1000
-            max_price_threshold = 1000000
+            min_price_threshold = max(0.01, min_val * 0.5)
+            max_price_threshold = max_val * 1.5
         
         df_resampled_clean = df_resampled[(df_resampled['low'] >= min_price_threshold) & (df_resampled['close'] >= min_price_threshold) & 
                                          (df_resampled['low'] <= max_price_threshold) & (df_resampled['close'] <= max_price_threshold)]
@@ -2853,8 +2888,45 @@ def create_straddle_chart_base64(df, date, symbol, call_strike, put_strike, expi
                     else:
                         print("VWAP values are None, not plotting in straddle chart")
                 
-                elif indicator == 'sma_20':
-                    print("SMA indicator detected, but it's not implemented yet")
+                elif indicator in ['sma_20', 'sma_50', 'sma_100', 'sma_200']:
+                    print(f"SMA indicator detected in straddle chart: {indicator}")
+                    try:
+                        if 'straddle_close' not in df.columns:
+                            print("ERROR: straddle_close column not found for SMA calculation")
+                            print(f"Available columns: {list(df.columns)}")
+                        else:
+                            try:
+                                period = int(indicator.split('_')[1])
+                            except Exception:
+                                period = 20
+                            print(f"Calculating SMA with period {period}")
+                            sma_values = calculate_sma(df, period=period)
+                            print(f"SMA {period} values returned: {sma_values is not None}")
+                            if sma_values is not None:
+                                try:
+                                    color_map = {
+                                        20: '#ffaa00',
+                                        50: '#00ccff',
+                                        100: '#9b59b6',
+                                        200: '#ffffff'
+                                    }
+                                    color = color_map.get(period, '#ffaa00')
+                                    label = f'SMA (Close, {period})'
+                                    print(f"Plotting SMA line: period={period}, color={color}")
+                                    ax.plot(range(len(sma_values)), sma_values, 
+                                            color=color, linewidth=3, label=label, 
+                                            alpha=0.9, linestyle='-', zorder=90)
+                                    all_values = list(sma_values) + list(df['straddle_close'])
+                                    y_min = min(all_values) * 0.995
+                                    y_max = max(all_values) * 1.005
+                                    ax.set_ylim(y_min, y_max)
+                                    print(f"SMA {period} line plotted successfully")
+                                except Exception as plot_error:
+                                    print(f"Error plotting SMA {period} line: {plot_error}")
+                            else:
+                                print(f"SMA {period} values are None, not plotting in straddle chart")
+                    except Exception as sma_error:
+                        print(f"Error handling SMA indicator {indicator}: {sma_error}")
                 
                 elif indicator == 'ema_20':
                     print("*** EMA 20 INDICATOR DETECTED ***")

@@ -263,6 +263,149 @@
             margin-top: 20px;
         }
 
+        .indicator-toggle-bar {
+            margin-top: 15px;
+            display: none;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .indicator-toggle-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #00ff88;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .indicator-toggle-bar label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #cccccc;
+            cursor: pointer;
+        }
+
+        .indicator-toggle-bar input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .indicator-settings-buttons {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .indicator-settings-button {
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+            color: #cccccc;
+            cursor: pointer;
+        }
+
+        .indicator-settings-button:hover {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+        }
+
+        .indicator-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .indicator-modal-content {
+            background: #1e1e2f;
+            border-radius: 10px;
+            padding: 20px 22px;
+            width: 320px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .indicator-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .indicator-modal-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #ffffff;
+        }
+
+        .indicator-modal-close {
+            background: none;
+            border: none;
+            color: #cccccc;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .indicator-modal-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        .indicator-modal-row label {
+            font-size: 0.8rem;
+            color: #cccccc;
+            margin-bottom: 4px;
+        }
+
+        .indicator-modal-row input,
+        .indicator-modal-row select {
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #12121e;
+            color: #ffffff;
+            font-size: 0.85rem;
+        }
+
+        .indicator-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .indicator-btn-secondary,
+        .indicator-btn-primary {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .indicator-btn-secondary {
+            background: #333344;
+            color: #cccccc;
+        }
+
+        .indicator-btn-primary {
+            background: #007bff;
+            color: #ffffff;
+        }
+
         .chart-image {
             max-width: 100%;
             height: auto;
@@ -789,13 +932,203 @@
                     </div>
                 </div>
                 
-                <!-- Remove the old tooltip location -->
+                <div class="indicator-toggle-bar" id="indicatorToggleBar">
+                    <span class="indicator-toggle-title">Indicators</span>
+                    <label>
+                        <input type="checkbox" id="toggleEMA20" checked>
+                        EMA 20
+                    </label>
+                    <label>
+                        <input type="checkbox" id="toggleSMA" checked>
+                        SMA
+                    </label>
+                    <label>
+                        <input type="checkbox" id="toggleVWAP" checked>
+                        VWAP
+                    </label>
+                    <label>
+                        <input type="checkbox" id="toggleMACD" checked>
+                        MACD
+                    </label>
+                    <label>
+                        <input type="checkbox" id="toggleRSI" checked>
+                        RSI
+                    </label>
+                    <label>
+                        <input type="checkbox" id="toggleSupertrend" checked>
+                        Supertrend
+                    </label>
+                </div>
+                <div class="indicator-settings-buttons">
+                    <button type="button" class="indicator-settings-button" onclick="openEMAModal()">EMA Settings</button>
+                    <button type="button" class="indicator-settings-button" onclick="openSMAModal()">SMA Settings</button>
+                    <button type="button" class="indicator-settings-button" onclick="openRSIModal()">RSI Settings</button>
+                    <button type="button" class="indicator-settings-button" onclick="openSupertrendModal()">Supertrend Settings</button>
+                </div>
             </div>
             
             <div class="chart-info">
                 <h3 id="chartTitle">Chart Information</h3>
                 <div class="info-grid" id="chartInfo">
                     <!-- Chart information will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="indicator-modal" id="emaSettingsModal">
+            <div class="indicator-modal-content">
+                <div class="indicator-modal-header">
+                    <h3>Exponential Moving Average</h3>
+                    <button type="button" class="indicator-modal-close" onclick="closeEMAModal()">×</button>
+                </div>
+                <div class="indicator-modal-body">
+                    <div class="indicator-modal-row">
+                        <label for="emaSource">Source</label>
+                        <select id="emaSource">
+                            <option value="close">.close</option>
+                        </select>
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="emaPeriodInput">Periods</label>
+                        <input type="number" id="emaPeriodInput" value="20" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="emaColorInput">Line Color</label>
+                        <input type="color" id="emaColorInput" value="#ffcc00">
+                    </div>
+                </div>
+                <div class="indicator-modal-footer">
+                    <button type="button" class="indicator-btn-secondary" onclick="closeEMAModal()">Close</button>
+                    <button type="button" class="indicator-btn-primary" onclick="applyEMAModal()">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="indicator-modal" id="smaSettingsModal">
+            <div class="indicator-modal-content">
+                <div class="indicator-modal-header">
+                    <h3>Simple Moving Averages</h3>
+                    <button type="button" class="indicator-modal-close" onclick="closeSMAModal()">×</button>
+                </div>
+                <div class="indicator-modal-body">
+                    <div class="indicator-modal-row">
+                        <label for="smaSource">Source</label>
+                        <select id="smaSource">
+                            <option value="close">.close</option>
+                        </select>
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma1PeriodInput">SMA 1 Period</label>
+                        <input type="number" id="sma1PeriodInput" value="20" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma1ColorInput">SMA 1 Color</label>
+                        <input type="color" id="sma1ColorInput" value="#ff0000">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label>
+                            <input type="checkbox" id="sma1Enabled" checked>
+                            Enable SMA 1
+                        </label>
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma2PeriodInput">SMA 2 Period</label>
+                        <input type="number" id="sma2PeriodInput" value="50" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma2ColorInput">SMA 2 Color</label>
+                        <input type="color" id="sma2ColorInput" value="#00ccff">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label>
+                            <input type="checkbox" id="sma2Enabled">
+                            Enable SMA 2
+                        </label>
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma3PeriodInput">SMA 3 Period</label>
+                        <input type="number" id="sma3PeriodInput" value="200" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="sma3ColorInput">SMA 3 Color</label>
+                        <input type="color" id="sma3ColorInput" value="#ffffff">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label>
+                            <input type="checkbox" id="sma3Enabled">
+                            Enable SMA 3
+                        </label>
+                    </div>
+                </div>
+                <div class="indicator-modal-footer">
+                    <button type="button" class="indicator-btn-secondary" onclick="closeSMAModal()">Close</button>
+                    <button type="button" class="indicator-btn-primary" onclick="applySMAModal()">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="indicator-modal" id="rsiSettingsModal">
+            <div class="indicator-modal-content">
+                <div class="indicator-modal-header">
+                    <h3>Relative Strength Index</h3>
+                    <button type="button" class="indicator-modal-close" onclick="closeRSIModal()">×</button>
+                </div>
+                <div class="indicator-modal-body">
+                    <div class="indicator-modal-row">
+                        <label for="rsiSource">Source</label>
+                        <select id="rsiSource">
+                            <option value="close">.close</option>
+                        </select>
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="rsiPeriodInput">Periods</label>
+                        <input type="number" id="rsiPeriodInput" value="14" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="rsiColorInput">Line Color</label>
+                        <input type="color" id="rsiColorInput" value="#ffaa00">
+                    </div>
+                </div>
+                <div class="indicator-modal-footer">
+                    <button type="button" class="indicator-btn-secondary" onclick="closeRSIModal()">Close</button>
+                    <button type="button" class="indicator-btn-primary" onclick="applyRSIModal()">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="indicator-modal" id="supertrendSettingsModal">
+            <div class="indicator-modal-content">
+                <div class="indicator-modal-header">
+                    <h3>Supertrend</h3>
+                    <button type="button" class="indicator-modal-close" onclick="closeSupertrendModal()">×</button>
+                </div>
+                <div class="indicator-modal-body">
+                    <div class="indicator-modal-row">
+                        <label for="supertrendSource">Source</label>
+                        <select id="supertrendSource">
+                            <option value="close">.close</option>
+                        </select>
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="supertrendPeriodInput">ATR Period</label>
+                        <input type="number" id="supertrendPeriodInput" value="10" min="1" step="1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="supertrendMultiplierInput">Multiplier</label>
+                        <input type="number" id="supertrendMultiplierInput" value="3" min="0.1" step="0.1">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="supertrendUpColorInput">Uptrend Color</label>
+                        <input type="color" id="supertrendUpColorInput" value="#00ff88">
+                    </div>
+                    <div class="indicator-modal-row">
+                        <label for="supertrendDownColorInput">Downtrend Color</label>
+                        <input type="color" id="supertrendDownColorInput" value="#ff4444">
+                    </div>
+                </div>
+                <div class="indicator-modal-footer">
+                    <button type="button" class="indicator-btn-secondary" onclick="closeSupertrendModal()">Close</button>
+                    <button type="button" class="indicator-btn-primary" onclick="applySupertrendModal()">Apply</button>
                 </div>
             </div>
         </div>
@@ -1993,10 +2326,8 @@
                 expiryGroup.style.display = 'none';
             }
             
-            // Initialize timeframe display
             updateTimeframeDisplay();
             
-            // Initialize date selectors for the current data type
             let symbol = 'nifty';
             if (currentDataType.startsWith('banknifty_')) {
                 symbol = 'banknifty';
@@ -2047,11 +2378,65 @@
                         </small>
                     `;
                 });
+
+            const emaToggle = document.getElementById('toggleEMA20');
+            const smaToggle = document.getElementById('toggleSMA');
+            const vwapToggle = document.getElementById('toggleVWAP');
+            const macdToggle = document.getElementById('toggleMACD');
+            const rsiToggle = document.getElementById('toggleRSI');
+            const supertrendToggle = document.getElementById('toggleSupertrend');
+            if (emaToggle) {
+                emaToggle.addEventListener('change', updateIndicatorVisibility);
+            }
+            if (smaToggle) {
+                smaToggle.addEventListener('change', updateIndicatorVisibility);
+            }
+            if (vwapToggle) {
+                vwapToggle.addEventListener('change', updateIndicatorVisibility);
+            }
+            if (macdToggle) {
+                macdToggle.addEventListener('change', updateIndicatorVisibility);
+            }
+            if (rsiToggle) {
+                rsiToggle.addEventListener('change', updateIndicatorVisibility);
+            }
+            if (supertrendToggle) {
+                supertrendToggle.addEventListener('change', updateIndicatorVisibility);
+            }
         });
         
         // Interactive Chart Variables
         let currentChart = null;
         let candlestickData = [];
+        let ema20Series = null;
+        let smaSeriesList = [];
+        let vwapSeries = null;
+        let macdSeries = null;
+        let macdSignalSeries = null;
+        let rsiSeries = null;
+        let supertrendUpSeries = null;
+        let supertrendDownSeries = null;
+        let emaValuesCache = [];
+        let smaValuesCacheList = [];
+        let vwapValuesCache = [];
+        let macdDataCache = null;
+        let rsiValuesCache = [];
+        let supertrendValuesCache = [];
+        let supertrendDirectionsCache = [];
+
+        let emaPeriod = 20;
+        let emaColor = '#ffcc00';
+        let smaConfigs = [
+            { period: 20, color: '#ff0000', enabled: true },
+            { period: 50, color: '#00ccff', enabled: false },
+            { period: 200, color: '#ffffff', enabled: false }
+        ];
+        let rsiPeriod = 14;
+        let rsiColor = '#ffaa00';
+        let supertrendPeriod = 10;
+        let supertrendMultiplier = 3;
+        let supertrendUpColor = '#00ff88';
+        let supertrendDownColor = '#ff4444';
         
         // Function to check if library is ready
         function isLibraryReady() {
@@ -2113,9 +2498,12 @@
                 waitForLibrary().then(() => {
                     console.log('Library is ready, proceeding with chart creation...');
                     
-                    // Hide static chart and show interactive chart
                     document.getElementById('chartImage').style.display = 'none';
                     document.getElementById('interactiveChartContainer').style.display = 'block';
+                    const indicatorBar = document.getElementById('indicatorToggleBar');
+                    if (indicatorBar) {
+                        indicatorBar.style.display = 'flex';
+                    }
                     
                     // Change button text
                     const btn = document.getElementById('interactiveChartBtn');
@@ -2165,6 +2553,10 @@
         function showStaticChart() {
             document.getElementById('interactiveChartContainer').style.display = 'none';
             document.getElementById('chartImage').style.display = 'block';
+            const indicatorBar = document.getElementById('indicatorToggleBar');
+            if (indicatorBar) {
+                indicatorBar.style.display = 'none';
+            }
             
             // Change button text back
             const btn = document.getElementById('interactiveChartBtn');
@@ -2229,7 +2621,6 @@
                 console.log('Sample time data:', chartData.slice(0, 5).map(c => ({ time: c.time, open: c.open, close: c.close })));
                 console.log('========================');
                 
-                // Destroy existing chart if it exists
                 if (currentChart) {
                     try {
                         currentChart.remove();
@@ -2239,7 +2630,60 @@
                     currentChart = null;
                 }
 
-                // Create the chart container
+                if (ema20Series && currentChart) {
+                    try {
+                        currentChart.removeSeries(ema20Series);
+                    } catch (e) {}
+                    ema20Series = null;
+                }
+                if (smaSeriesList && currentChart) {
+                    for (let i = 0; i < smaSeriesList.length; i++) {
+                        const series = smaSeriesList[i];
+                        if (series) {
+                            try {
+                                currentChart.removeSeries(series);
+                            } catch (e) {}
+                        }
+                    }
+                    smaSeriesList = [];
+                }
+                if (vwapSeries && currentChart) {
+                    try {
+                        currentChart.removeSeries(vwapSeries);
+                    } catch (e) {}
+                    vwapSeries = null;
+                }
+                if (macdSeries && currentChart) {
+                    try {
+                        currentChart.removeSeries(macdSeries);
+                    } catch (e) {}
+                    macdSeries = null;
+                }
+                if (macdSignalSeries && currentChart) {
+                    try {
+                        currentChart.removeSeries(macdSignalSeries);
+                    } catch (e) {}
+                    macdSignalSeries = null;
+                }
+                if (rsiSeries && currentChart) {
+                    try {
+                        currentChart.removeSeries(rsiSeries);
+                    } catch (e) {}
+                    rsiSeries = null;
+                }
+                if (supertrendUpSeries && currentChart) {
+                    try {
+                        currentChart.removeSeries(supertrendUpSeries);
+                    } catch (e) {}
+                    supertrendUpSeries = null;
+                }
+                if (supertrendDownSeries && currentChart) {
+                    try {
+                        currentChart.removeSeries(supertrendDownSeries);
+                    } catch (e) {}
+                    supertrendDownSeries = null;
+                }
+
                 const chartContainer = document.getElementById('candlestickChart');
                 const tooltipContainer = document.getElementById('interactiveChartContainer');
                 if (!chartContainer || !tooltipContainer) {
@@ -2248,7 +2692,6 @@
                 
                 console.log('Chart container dimensions:', chartContainer.clientWidth, 'x', chartContainer.clientHeight);
                 
-                // Ensure container has proper dimensions
                 if (chartContainer.clientWidth === 0 || chartContainer.clientHeight === 0) {
                     chartContainer.style.width = '100%';
                     chartContainer.style.height = '500px';
@@ -2258,12 +2701,10 @@
                 console.log('LightweightCharts object:', LightweightCharts);
                 console.log('createChart method:', LightweightCharts.createChart);
                 
-                // Validate that createChart method exists
                 if (typeof LightweightCharts.createChart !== 'function') {
                     throw new Error('LightweightCharts.createChart is not a function. Library may not be loaded correctly.');
                 }
                 
-                // Create the chart
                 const chart = LightweightCharts.createChart(chartContainer, {
                     width: Math.max(chartContainer.clientWidth, 800),
                     height: 500,
@@ -2323,7 +2764,6 @@
                     },
                 });
                 
-                // Validate that chart was created successfully
                 if (!chart) {
                     throw new Error('Chart creation failed - chart object is null or undefined');
                 }
@@ -2331,13 +2771,11 @@
                 console.log('Chart object created:', chart);
                 console.log('Chart methods available:', Object.getOwnPropertyNames(chart));
 
-                // Validate that addCandlestickSeries method exists
                 if (typeof chart.addCandlestickSeries !== 'function') {
                     throw new Error('chart.addCandlestickSeries is not a function. Chart object may be invalid.');
                 }
                 
                 console.log('Creating candlestick series...');
-                // Create candlestick series with clean styling
                 const candlestickSeries = chart.addCandlestickSeries({
                     upColor: '#00ff88',
                     downColor: '#ff4444',
@@ -2355,7 +2793,6 @@
 
                 console.log('Candlestick series created successfully');
 
-                // Prepare data for the chart with proper timestamps
                 console.log('Preparing chart data...');
                 console.log('Sample time data:', chartData.slice(0, 3).map(c => c.time));
                 
@@ -2434,13 +2871,26 @@
 
                 console.log('Processed chart data:', candlestickData.slice(0, 3));
                 
-                // Set the data
                 candlestickSeries.setData(candlestickData);
                 console.log('Chart data set successfully');
 
-                // Store reference to current chart BEFORE any other operations
+                emaValuesCache = calculateEMA(candlestickData, emaPeriod);
+                smaValuesCacheList = [];
+                for (let i = 0; i < smaConfigs.length; i++) {
+                    smaValuesCacheList.push(calculateSMA(candlestickData, smaConfigs[i].period));
+                }
+                vwapValuesCache = calculateVWAP(candlestickData);
+                macdDataCache = calculateMACD(candlestickData, 12, 26, 9);
+                rsiValuesCache = calculateRSI(candlestickData, rsiPeriod);
+
+                const supertrendResult = calculateSupertrend(candlestickData, supertrendPeriod, supertrendMultiplier);
+                supertrendValuesCache = supertrendResult.values;
+                supertrendDirectionsCache = supertrendResult.directions;
+
                 currentChart = chart;
                 console.log('Chart reference stored:', currentChart);
+
+                updateIndicatorVisibility();
 
                 // Handle window resize
                 const resizeObserver = new ResizeObserver(entries => {
@@ -2637,6 +3087,532 @@
             }
         }
 
+        function updateIndicatorVisibility() {
+            if (!currentChart || !candlestickData || candlestickData.length === 0) {
+                return;
+            }
+            const showEMA20 = document.getElementById('toggleEMA20') ? document.getElementById('toggleEMA20').checked : false;
+            const showSMA = document.getElementById('toggleSMA') ? document.getElementById('toggleSMA').checked : false;
+            const showVWAP = document.getElementById('toggleVWAP') ? document.getElementById('toggleVWAP').checked : false;
+            const showMACD = document.getElementById('toggleMACD') ? document.getElementById('toggleMACD').checked : false;
+            const showRSI = document.getElementById('toggleRSI') ? document.getElementById('toggleRSI').checked : false;
+            const showSupertrend = document.getElementById('toggleSupertrend') ? document.getElementById('toggleSupertrend').checked : false;
+
+            if (!showEMA20 && ema20Series && currentChart) {
+                try {
+                    currentChart.removeSeries(ema20Series);
+                } catch (e) {}
+                ema20Series = null;
+            }
+            if (!showSMA && smaSeriesList && currentChart) {
+                for (let i = 0; i < smaSeriesList.length; i++) {
+                    const series = smaSeriesList[i];
+                    if (series) {
+                        try {
+                            currentChart.removeSeries(series);
+                        } catch (e) {}
+                    }
+                }
+                smaSeriesList = [];
+            }
+            if (!showVWAP && vwapSeries && currentChart) {
+                try {
+                    currentChart.removeSeries(vwapSeries);
+                } catch (e) {}
+                vwapSeries = null;
+            }
+            if (!showMACD && macdSeries && currentChart) {
+                try {
+                    currentChart.removeSeries(macdSeries);
+                } catch (e) {}
+                macdSeries = null;
+            }
+            if (!showMACD && macdSignalSeries && currentChart) {
+                try {
+                    currentChart.removeSeries(macdSignalSeries);
+                } catch (e) {}
+                macdSignalSeries = null;
+            }
+            if (!showRSI && rsiSeries && currentChart) {
+                try {
+                    currentChart.removeSeries(rsiSeries);
+                } catch (e) {}
+                rsiSeries = null;
+            }
+            if (!showSupertrend && supertrendUpSeries && currentChart) {
+                try {
+                    currentChart.removeSeries(supertrendUpSeries);
+                } catch (e) {}
+                supertrendUpSeries = null;
+            }
+            if (!showSupertrend && supertrendDownSeries && currentChart) {
+                try {
+                    currentChart.removeSeries(supertrendDownSeries);
+                } catch (e) {}
+                supertrendDownSeries = null;
+            }
+
+            if (showEMA20 && emaValuesCache && emaValuesCache.length === candlestickData.length) {
+                const data = [];
+                for (let i = 0; i < candlestickData.length; i++) {
+                    const value = emaValuesCache[i];
+                    if (!isNaN(value)) {
+                        data.push({ time: candlestickData[i].time, value: value });
+                    }
+                }
+                if (data.length > 0) {
+                    if (!ema20Series) {
+                        ema20Series = currentChart.addLineSeries({
+                            color: emaColor,
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                    }
+                    ema20Series.setData(data);
+                }
+            }
+
+            if (showSMA && smaValuesCacheList && smaValuesCacheList.length === smaConfigs.length) {
+                if (!smaSeriesList || smaSeriesList.length !== smaConfigs.length) {
+                    smaSeriesList = new Array(smaConfigs.length).fill(null);
+                }
+                for (let i = 0; i < smaConfigs.length; i++) {
+                    const config = smaConfigs[i];
+                    const values = smaValuesCacheList[i];
+                    if (!config || !config.enabled || !values || values.length !== candlestickData.length) {
+                        if (smaSeriesList[i] && currentChart) {
+                            try {
+                                currentChart.removeSeries(smaSeriesList[i]);
+                            } catch (e) {}
+                            smaSeriesList[i] = null;
+                        }
+                        continue;
+                    }
+                    const data = [];
+                    for (let j = 0; j < candlestickData.length; j++) {
+                        const value = values[j];
+                        if (!isNaN(value)) {
+                            data.push({ time: candlestickData[j].time, value: value });
+                        }
+                    }
+                    if (data.length === 0) {
+                        if (smaSeriesList[i] && currentChart) {
+                            try {
+                                currentChart.removeSeries(smaSeriesList[i]);
+                            } catch (e) {}
+                            smaSeriesList[i] = null;
+                        }
+                        continue;
+                    }
+                    if (!smaSeriesList[i]) {
+                        smaSeriesList[i] = currentChart.addLineSeries({
+                            color: config.color,
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                    } else {
+                        smaSeriesList[i].applyOptions({
+                            color: config.color
+                        });
+                    }
+                    smaSeriesList[i].setData(data);
+                }
+            }
+
+            if (showVWAP && vwapValuesCache && vwapValuesCache.length === candlestickData.length) {
+                const data = [];
+                for (let i = 0; i < candlestickData.length; i++) {
+                    const value = vwapValuesCache[i];
+                    if (!isNaN(value)) {
+                        data.push({ time: candlestickData[i].time, value: value });
+                    }
+                }
+                if (data.length > 0) {
+                    if (!vwapSeries) {
+                        vwapSeries = currentChart.addLineSeries({
+                            color: '#00ccff',
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                    }
+                    vwapSeries.setData(data);
+                }
+            }
+
+            if (showMACD && macdDataCache && macdDataCache.macdLine && macdDataCache.macdLine.length > 0) {
+                const macdSeriesData = [];
+                const signalSeriesData = [];
+                const length = Math.min(candlestickData.length, macdDataCache.macdLine.length, macdDataCache.signalLine.length);
+                for (let i = 0; i < length; i++) {
+                    const macdValue = macdDataCache.macdLine[i];
+                    const signalValue = macdDataCache.signalLine[i];
+                    if (!isNaN(macdValue) && !isNaN(signalValue)) {
+                        const time = candlestickData[i].time;
+                        macdSeriesData.push({ time: time, value: macdValue });
+                        signalSeriesData.push({ time: time, value: signalValue });
+                    }
+                }
+                if (macdSeriesData.length > 0) {
+                    if (!macdSeries) {
+                        macdSeries = currentChart.addLineSeries({
+                            color: '#ff4444',
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                    }
+                    if (!macdSignalSeries) {
+                        macdSignalSeries = currentChart.addLineSeries({
+                            color: '#00ff88',
+                            lineWidth: 1,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                    }
+                    macdSeries.setData(macdSeriesData);
+                    macdSignalSeries.setData(signalSeriesData);
+                }
+            }
+
+            if (showRSI && rsiValuesCache && rsiValuesCache.length > 0) {
+                const rsiSeriesData = [];
+                for (let i = 0; i < rsiValuesCache.length; i++) {
+                    const index = i + rsiPeriod;
+                    if (index < candlestickData.length) {
+                        const value = rsiValuesCache[i];
+                        if (!isNaN(value)) {
+                            rsiSeriesData.push({
+                                time: candlestickData[index].time,
+                                value: value
+                            });
+                        }
+                    }
+                }
+                if (rsiSeriesData.length > 0) {
+                    if (!rsiSeries) {
+                        rsiSeries = currentChart.addLineSeries({
+                            color: rsiColor,
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                    }
+                    rsiSeries.setData(rsiSeriesData);
+                }
+            }
+
+            if (showSupertrend && supertrendValuesCache && supertrendValuesCache.length === candlestickData.length && supertrendDirectionsCache && supertrendDirectionsCache.length === candlestickData.length) {
+                const upData = [];
+                const downData = [];
+                for (let i = 0; i < candlestickData.length; i++) {
+                    const value = supertrendValuesCache[i];
+                    const dir = supertrendDirectionsCache[i];
+                    if (isNaN(value) || dir === 0) {
+                        continue;
+                    }
+                    const point = { time: candlestickData[i].time, value: value };
+                    if (dir > 0) {
+                        upData.push(point);
+                    } else {
+                        downData.push(point);
+                    }
+                }
+                if (upData.length > 0) {
+                    if (!supertrendUpSeries) {
+                        supertrendUpSeries = currentChart.addLineSeries({
+                            color: supertrendUpColor,
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                    }
+                    supertrendUpSeries.setData(upData);
+                }
+                if (downData.length > 0) {
+                    if (!supertrendDownSeries) {
+                        supertrendDownSeries = currentChart.addLineSeries({
+                            color: supertrendDownColor,
+                            lineWidth: 2,
+                            priceLineVisible: false,
+                            lastValueVisible: false
+                        });
+                    }
+                    supertrendDownSeries.setData(downData);
+                }
+            }
+        }
+
+        function calculateVWAP(data) {
+            if (!data || data.length === 0) {
+                return [];
+            }
+            const values = [];
+            let cumulativeTPV = 0;
+            let cumulativeVolume = 0;
+            for (let i = 0; i < data.length; i++) {
+                const candle = data[i];
+                const typicalPrice = (candle.high + candle.low + candle.close) / 3;
+                const volume = 1;
+                cumulativeTPV += typicalPrice * volume;
+                cumulativeVolume += volume;
+                values.push(cumulativeTPV / cumulativeVolume);
+            }
+            return values;
+        }
+
+        function calculateEMA(data, period) {
+            if (!data || data.length === 0 || !period || data.length < period) {
+                return [];
+            }
+            const alpha = 2 / (period + 1);
+            const result = [data[0].close];
+            for (let i = 1; i < data.length; i++) {
+                const value = alpha * data[i].close + (1 - alpha) * result[result.length - 1];
+                result.push(value);
+            }
+            return result;
+        }
+
+        function calculateSMA(data, period) {
+            if (!data || data.length === 0 || !period || data.length < period) {
+                return [];
+            }
+            const result = new Array(data.length).fill(NaN);
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) {
+                sum += data[i].close;
+                if (i >= period) {
+                    sum -= data[i - period].close;
+                }
+                if (i >= period - 1) {
+                    result[i] = sum / period;
+                }
+            }
+            return result;
+        }
+
+        function calculateEMAFromValues(values, period) {
+            if (!values || values.length === 0 || !period) {
+                return [];
+            }
+            const ema = [];
+            const multiplier = 2 / (period + 1);
+            let sum = 0;
+            const length = Math.min(period, values.length);
+            for (let i = 0; i < length; i++) {
+                sum += values[i];
+            }
+            const initial = sum / length;
+            ema.push(initial);
+            for (let i = 1; i < values.length; i++) {
+                const value = values[i] * multiplier + ema[i - 1] * (1 - multiplier);
+                ema.push(value);
+            }
+            return ema;
+        }
+
+        function calculateMACD(data, fastPeriod, slowPeriod, signalPeriod) {
+            const result = { macdLine: [], signalLine: [], histogram: [] };
+            if (!data || data.length === 0) {
+                return result;
+            }
+            const maxPeriod = Math.max(fastPeriod, slowPeriod, signalPeriod);
+            if (data.length < maxPeriod) {
+                return result;
+            }
+            const fastEMA = calculateEMA(data, fastPeriod);
+            const slowEMA = calculateEMA(data, slowPeriod);
+            if (!fastEMA.length || !slowEMA.length) {
+                return result;
+            }
+            const macdLine = [];
+            for (let i = 0; i < data.length; i++) {
+                if (fastEMA[i] !== undefined && slowEMA[i] !== undefined && !isNaN(fastEMA[i]) && !isNaN(slowEMA[i])) {
+                    macdLine.push(fastEMA[i] - slowEMA[i]);
+                } else {
+                    macdLine.push(NaN);
+                }
+            }
+            const signalLine = calculateEMAFromValues(macdLine, signalPeriod);
+            const histogram = [];
+            for (let i = 0; i < data.length; i++) {
+                if (macdLine[i] !== undefined && signalLine[i] !== undefined && !isNaN(macdLine[i]) && !isNaN(signalLine[i])) {
+                    histogram.push(macdLine[i] - signalLine[i]);
+                } else {
+                    histogram.push(NaN);
+                }
+            }
+            result.macdLine = macdLine;
+            result.signalLine = signalLine;
+            result.histogram = histogram;
+            return result;
+        }
+
+        function calculateATR(data, period) {
+            if (!data || data.length === 0 || !period || data.length < period + 1) {
+                return [];
+            }
+            const atr = new Array(data.length).fill(NaN);
+            let prevClose = data[0].close;
+            let trSum = 0;
+            for (let i = 0; i < data.length; i++) {
+                const high = data[i].high;
+                const low = data[i].low;
+                const tr = Math.max(
+                    high - low,
+                    Math.abs(high - prevClose),
+                    Math.abs(low - prevClose)
+                );
+                prevClose = data[i].close;
+                if (i < period) {
+                    trSum += tr;
+                    if (i === period - 1) {
+                        atr[i] = trSum / period;
+                    }
+                } else {
+                    atr[i] = (atr[i - 1] * (period - 1) + tr) / period;
+                }
+            }
+            return atr;
+        }
+
+        function calculateSupertrend(data, period, multiplier) {
+            const length = data ? data.length : 0;
+            if (!data || length === 0 || !period || length < period + 1) {
+                return { values: [], directions: [] };
+            }
+            const atr = calculateATR(data, period);
+            const basicUpper = new Array(length).fill(NaN);
+            const basicLower = new Array(length).fill(NaN);
+            const finalUpper = new Array(length).fill(NaN);
+            const finalLower = new Array(length).fill(NaN);
+            const supertrend = new Array(length).fill(NaN);
+            const directions = new Array(length).fill(0);
+
+            for (let i = 0; i < length; i++) {
+                if (isNaN(atr[i])) {
+                    continue;
+                }
+                const hl2 = (data[i].high + data[i].low) / 2;
+                basicUpper[i] = hl2 + multiplier * atr[i];
+                basicLower[i] = hl2 - multiplier * atr[i];
+            }
+
+            for (let i = 0; i < length; i++) {
+                if (i === 0 || isNaN(basicUpper[i]) || isNaN(basicLower[i])) {
+                    finalUpper[i] = basicUpper[i];
+                    finalLower[i] = basicLower[i];
+                    continue;
+                }
+                const prevClose = data[i - 1].close;
+
+                if (!isNaN(finalUpper[i - 1])) {
+                    finalUpper[i] = finalUpper[i - 1];
+                    if (basicUpper[i] < finalUpper[i - 1] && prevClose > finalUpper[i - 1]) {
+                        finalUpper[i] = basicUpper[i];
+                    }
+                } else {
+                    finalUpper[i] = basicUpper[i];
+                }
+
+                if (!isNaN(finalLower[i - 1])) {
+                    finalLower[i] = finalLower[i - 1];
+                    if (basicLower[i] > finalLower[i - 1] && prevClose < finalLower[i - 1]) {
+                        finalLower[i] = basicLower[i];
+                    }
+                } else {
+                    finalLower[i] = basicLower[i];
+                }
+            }
+
+            for (let i = 0; i < length; i++) {
+                if (i === 0 || isNaN(finalUpper[i]) || isNaN(finalLower[i])) {
+                    supertrend[i] = NaN;
+                    directions[i] = 0;
+                    continue;
+                }
+                const close = data[i].close;
+                if (i === 1 || isNaN(supertrend[i - 1])) {
+                    if (close >= finalLower[i]) {
+                        supertrend[i] = finalLower[i];
+                        directions[i] = 1;
+                    } else {
+                        supertrend[i] = finalUpper[i];
+                        directions[i] = -1;
+                    }
+                    continue;
+                }
+
+                if (supertrend[i - 1] === finalUpper[i - 1]) {
+                    if (close <= finalUpper[i]) {
+                        supertrend[i] = finalUpper[i];
+                        directions[i] = -1;
+                    } else {
+                        supertrend[i] = finalLower[i];
+                        directions[i] = 1;
+                    }
+                } else {
+                    if (close >= finalLower[i]) {
+                        supertrend[i] = finalLower[i];
+                        directions[i] = 1;
+                    } else {
+                        supertrend[i] = finalUpper[i];
+                        directions[i] = -1;
+                    }
+                }
+            }
+
+            console.log('Supertrend debug sample:', {
+                firstValues: supertrend.slice(0, 10),
+                firstDirs: directions.slice(0, 10)
+            });
+
+            return { values: supertrend, directions: directions };
+        }
+
+        function calculateRSI(data, period) {
+            if (!data || data.length === 0 || !period || data.length < period + 1) {
+                return [];
+            }
+            const priceChanges = [];
+            for (let i = 1; i < data.length; i++) {
+                priceChanges.push(data[i].close - data[i - 1].close);
+            }
+            const gains = priceChanges.map(v => (v > 0 ? v : 0));
+            const losses = priceChanges.map(v => (v < 0 ? -v : 0));
+            let avgGain = 0;
+            let avgLoss = 0;
+            for (let i = 0; i < period; i++) {
+                avgGain += gains[i];
+                avgLoss += losses[i];
+            }
+            avgGain /= period;
+            avgLoss /= period;
+            const rsiValues = [];
+            if (avgLoss === 0) {
+                rsiValues.push(100);
+            } else {
+                const rs = avgGain / avgLoss;
+                const rsi = 100 - 100 / (1 + rs);
+                rsiValues.push(rsi);
+            }
+            for (let i = period; i < priceChanges.length; i++) {
+                avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
+                avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
+                if (avgLoss === 0) {
+                    rsiValues.push(100);
+                } else {
+                    const rs = avgGain / avgLoss;
+                    const rsi = 100 - 100 / (1 + rs);
+                    rsiValues.push(rsi);
+                }
+            }
+            return rsiValues;
+        }
+
         function navigateToDate(targetDate) {
             const dateParts = targetDate.split('-');
             
@@ -2676,6 +3652,205 @@
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 3000);
+        }
+
+        function openEMAModal() {
+            const modal = document.getElementById('emaSettingsModal');
+            if (!modal) return;
+            const periodInput = document.getElementById('emaPeriodInput');
+            const colorInput = document.getElementById('emaColorInput');
+            if (periodInput) periodInput.value = emaPeriod;
+            if (colorInput) colorInput.value = emaColor;
+            modal.style.display = 'flex';
+        }
+
+        function closeEMAModal() {
+            const modal = document.getElementById('emaSettingsModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function applyEMAModal() {
+            const periodInput = document.getElementById('emaPeriodInput');
+            const colorInput = document.getElementById('emaColorInput');
+            if (periodInput) {
+                const value = parseInt(periodInput.value, 10);
+                if (!isNaN(value) && value > 0) {
+                    emaPeriod = value;
+                }
+            }
+            if (colorInput && colorInput.value) {
+                emaColor = colorInput.value;
+            }
+            if (candlestickData && candlestickData.length > 0) {
+                emaValuesCache = calculateEMA(candlestickData, emaPeriod);
+            }
+            closeEMAModal();
+            updateIndicatorVisibility();
+        }
+
+        function openSMAModal() {
+            const modal = document.getElementById('smaSettingsModal');
+            if (!modal) return;
+            const p1 = document.getElementById('sma1PeriodInput');
+            const c1 = document.getElementById('sma1ColorInput');
+            const e1 = document.getElementById('sma1Enabled');
+            const p2 = document.getElementById('sma2PeriodInput');
+            const c2 = document.getElementById('sma2ColorInput');
+            const e2 = document.getElementById('sma2Enabled');
+            const p3 = document.getElementById('sma3PeriodInput');
+            const c3 = document.getElementById('sma3ColorInput');
+            const e3 = document.getElementById('sma3Enabled');
+            if (smaConfigs[0]) {
+                if (p1) p1.value = smaConfigs[0].period;
+                if (c1) c1.value = smaConfigs[0].color;
+                if (e1) e1.checked = smaConfigs[0].enabled;
+            }
+            if (smaConfigs[1]) {
+                if (p2) p2.value = smaConfigs[1].period;
+                if (c2) c2.value = smaConfigs[1].color;
+                if (e2) e2.checked = smaConfigs[1].enabled;
+            }
+            if (smaConfigs[2]) {
+                if (p3) p3.value = smaConfigs[2].period;
+                if (c3) c3.value = smaConfigs[2].color;
+                if (e3) e3.checked = smaConfigs[2].enabled;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closeSMAModal() {
+            const modal = document.getElementById('smaSettingsModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function applySMAModal() {
+            const p1 = document.getElementById('sma1PeriodInput');
+            const c1 = document.getElementById('sma1ColorInput');
+            const e1 = document.getElementById('sma1Enabled');
+            const p2 = document.getElementById('sma2PeriodInput');
+            const c2 = document.getElementById('sma2ColorInput');
+            const e2 = document.getElementById('sma2Enabled');
+            const p3 = document.getElementById('sma3PeriodInput');
+            const c3 = document.getElementById('sma3ColorInput');
+            const e3 = document.getElementById('sma3Enabled');
+
+            const inputs = [
+                { p: p1, c: c1, e: e1 },
+                { p: p2, c: c2, e: e2 },
+                { p: p3, c: c3, e: e3 }
+            ];
+
+            for (let i = 0; i < smaConfigs.length && i < inputs.length; i++) {
+                const cfg = smaConfigs[i];
+                const row = inputs[i];
+                if (!cfg || !row) continue;
+                if (row.p) {
+                    const v = parseInt(row.p.value, 10);
+                    if (!isNaN(v) && v > 0) {
+                        cfg.period = v;
+                    }
+                }
+                if (row.c && row.c.value) {
+                    cfg.color = row.c.value;
+                }
+                if (row.e) {
+                    cfg.enabled = row.e.checked;
+                }
+            }
+
+            if (candlestickData && candlestickData.length > 0) {
+                smaValuesCacheList = [];
+                for (let i = 0; i < smaConfigs.length; i++) {
+                    smaValuesCacheList.push(calculateSMA(candlestickData, smaConfigs[i].period));
+                }
+            }
+            closeSMAModal();
+            updateIndicatorVisibility();
+        }
+
+        function openRSIModal() {
+            const modal = document.getElementById('rsiSettingsModal');
+            if (!modal) return;
+            const periodInput = document.getElementById('rsiPeriodInput');
+            const colorInput = document.getElementById('rsiColorInput');
+            if (periodInput) periodInput.value = rsiPeriod;
+            if (colorInput) colorInput.value = rsiColor;
+            modal.style.display = 'flex';
+        }
+
+        function closeRSIModal() {
+            const modal = document.getElementById('rsiSettingsModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function applyRSIModal() {
+            const periodInput = document.getElementById('rsiPeriodInput');
+            const colorInput = document.getElementById('rsiColorInput');
+            if (periodInput) {
+                const value = parseInt(periodInput.value, 10);
+                if (!isNaN(value) && value > 0) {
+                    rsiPeriod = value;
+                }
+            }
+            if (colorInput && colorInput.value) {
+                rsiColor = colorInput.value;
+            }
+            if (candlestickData && candlestickData.length > 0) {
+                rsiValuesCache = calculateRSI(candlestickData, rsiPeriod);
+            }
+            closeRSIModal();
+            updateIndicatorVisibility();
+        }
+
+        function openSupertrendModal() {
+            const modal = document.getElementById('supertrendSettingsModal');
+            if (!modal) return;
+            const periodInput = document.getElementById('supertrendPeriodInput');
+            const multiplierInput = document.getElementById('supertrendMultiplierInput');
+            const upColorInput = document.getElementById('supertrendUpColorInput');
+            const downColorInput = document.getElementById('supertrendDownColorInput');
+            if (periodInput) periodInput.value = supertrendPeriod;
+            if (multiplierInput) multiplierInput.value = supertrendMultiplier;
+            if (upColorInput) upColorInput.value = supertrendUpColor;
+            if (downColorInput) downColorInput.value = supertrendDownColor;
+            modal.style.display = 'flex';
+        }
+
+        function closeSupertrendModal() {
+            const modal = document.getElementById('supertrendSettingsModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function applySupertrendModal() {
+            const periodInput = document.getElementById('supertrendPeriodInput');
+            const multiplierInput = document.getElementById('supertrendMultiplierInput');
+            const upColorInput = document.getElementById('supertrendUpColorInput');
+            const downColorInput = document.getElementById('supertrendDownColorInput');
+            if (periodInput) {
+                const value = parseInt(periodInput.value, 10);
+                if (!isNaN(value) && value > 0) {
+                    supertrendPeriod = value;
+                }
+            }
+            if (multiplierInput) {
+                const value = parseFloat(multiplierInput.value);
+                if (!isNaN(value) && value > 0) {
+                    supertrendMultiplier = value;
+                }
+            }
+            if (upColorInput && upColorInput.value) {
+                supertrendUpColor = upColorInput.value;
+            }
+            if (downColorInput && downColorInput.value) {
+                supertrendDownColor = downColorInput.value;
+            }
+            if (candlestickData && candlestickData.length > 0) {
+                const supertrendResult = calculateSupertrend(candlestickData, supertrendPeriod, supertrendMultiplier);
+                supertrendValuesCache = supertrendResult.values;
+                supertrendDirectionsCache = supertrendResult.directions;
+            }
+            closeSupertrendModal();
+            updateIndicatorVisibility();
         }
     </script>
 </body>
