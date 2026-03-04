@@ -2898,6 +2898,7 @@
                     console.error('LightweightCharts library not loaded!');
                     console.log('Falling back to Chart.js candlestick implementation...');
                     createChartJSCandlestickChart(chartData, title);
+                    isCreatingChart = false;
                     return;
                 }
                 
@@ -2946,6 +2947,7 @@
                 }
                 if (!chartContainer) {
                     console.error('Candlestick chart container not found');
+                    isCreatingChart = false;
                     return;
                 }
                 
@@ -3163,7 +3165,7 @@
                     // Create a timestamp for the selected date with the given time
                     // Use local timezone to avoid timezone conversion issues
                     const [year, month, day] = selectedDate.split('-');
-                    const selectedDateTime = new Date(year, month - 1, day, hours, minutes, seconds, 0);
+                    let selectedDateTime = new Date(year, month - 1, day, hours, minutes, seconds, 0);
                     
                     // Validate the date
                     if (isNaN(selectedDateTime.getTime())) {
@@ -3209,21 +3211,27 @@
                 // Check if chart is disposed before setting data
                 if (!chart || chart._disposed) {
                     console.log('Chart disposed during data processing, aborting chart creation');
+                    isCreatingChart = false;
                     return;
                 }
                 
                 try {
+                    if (!candlestickSeries || typeof candlestickSeries.setData !== 'function') {
+                        throw new Error('Candlestick series not initialized correctly');
+                    }
                     candlestickSeries.setData(candlestickData);
                     console.log('Data set successfully');
                 } catch (error) {
                     console.error('Error setting data:', error);
                     alert('Error setting chart data: ' + error.message);
+                    isCreatingChart = false;
                     return;
                 }
 
                 // Check if chart is still valid before adding any indicators
                 if (isChartDisposed || !chart || chart._disposed) {
                     console.log('Chart disposed before adding indicators, skipping all indicators');
+                    isCreatingChart = false;
                     return;
                 }
                 

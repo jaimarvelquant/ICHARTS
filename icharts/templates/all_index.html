@@ -786,6 +786,15 @@
 
         <div class="controls-section">
             <div class="control-group">
+                <label for="dataSourceSelect">Data Source</label>
+                <select id="dataSourceSelect" onchange="onDataSourceChange()">
+                    <option value="india">India - MySQL</option>
+                    <option value="us">US - MySQL</option>
+                    <option value="us_remote">US - Remote Server</option>
+                </select>
+                <small class="form-text">Choose data source</small>
+            </div>
+            <div class="control-group">
                 <label for="symbolSelect">Symbol</label>
                 <select id="symbolSelect" onchange="onSymbolChange()">
                     <option value="">Choose a symbol...</option>
@@ -793,6 +802,9 @@
                     <option value="banknifty" {% if selected_symbol == 'banknifty' %}selected{% endif %}>Bank Nifty</option>
                     <option value="midcpnifty" {% if selected_symbol == 'midcpnifty' %}selected{% endif %}>Midcap Nifty</option>
                     <option value="sensex" {% if selected_symbol == 'sensex' %}selected{% endif %}>Sensex</option>
+                    <option value="qqq" {% if selected_symbol == 'qqq' %}selected{% endif %}>QQQ</option>
+                    <option value="spy" {% if selected_symbol == 'spy' %}selected{% endif %}>SPY</option>
+                    <option value="spx" {% if selected_symbol == 'spx' %}selected{% endif %}>SPX</option>
                 </select>
             </div>
 
@@ -800,13 +812,13 @@
                 <label for="dataType">Data Type</label>
                 <select id="dataType" onchange="changeDataType(this.value)">
                     {% for data_type in data_types %}
-                        {% if data_type == 'nifty_cash' or data_type == 'banknifty_cash' or data_type == 'midcpnifty_cash' or data_type == 'sensex_cash' %}
+                        {% if data_type == 'nifty_cash' or data_type == 'banknifty_cash' or data_type == 'midcpnifty_cash' or data_type == 'sensex_cash' or data_type == 'qqq_cash' or data_type == 'spy_cash' or data_type == 'spx_cash' %}
                             <option value="{{ data_type }}" {% if selected_data_type == data_type %}selected{% endif %}>Spot</option>
-                        {% elif data_type == 'nifty_future' or data_type == 'banknifty_future' or data_type == 'midcpnifty_future' or data_type == 'sensex_future' %}
+                        {% elif data_type == 'nifty_future' or data_type == 'banknifty_future' or data_type == 'midcpnifty_future' or data_type == 'sensex_future' or data_type == 'qqq_future' or data_type == 'spy_future' or data_type == 'spx_future' %}
                             <option value="{{ data_type }}" {% if selected_data_type == data_type %}selected{% endif %}>Future</option>
-                        {% elif data_type == 'nifty_call' or data_type == 'banknifty_call' or data_type == 'midcpnifty_call' or data_type == 'sensex_call' %}
+                        {% elif data_type == 'nifty_call' or data_type == 'banknifty_call' or data_type == 'midcpnifty_call' or data_type == 'sensex_call' or data_type == 'qqq_call' or data_type == 'spy_call' or data_type == 'spx_call' %}
                             <option value="{{ data_type }}" {% if selected_data_type == data_type %}selected{% endif %}>Call</option>
-                        {% elif data_type == 'nifty_put' or data_type == 'banknifty_put' or data_type == 'midcpnifty_put' or data_type == 'sensex_put' %}
+                        {% elif data_type == 'nifty_put' or data_type == 'banknifty_put' or data_type == 'midcpnifty_put' or data_type == 'sensex_put' or data_type == 'qqq_put' or data_type == 'spy_put' or data_type == 'spx_put' %}
                             <option value="{{ data_type }}" {% if selected_data_type == data_type %}selected{% endif %}>Put</option>
                         {% endif %}
                     {% endfor %}
@@ -1157,9 +1169,21 @@
                 'sensex_cash': 'Spot',
                 'sensex_future': 'Future',
                 'sensex_call': 'Call',
-                'sensex_put': 'Put'
+                'sensex_put': 'Put',
+                'qqq_cash': 'Spot',
+                'qqq_future': 'Future',
+                'qqq_call': 'Call',
+                'qqq_put': 'Put',
+                'spy_cash': 'Spot',
+                'spy_future': 'Future',
+                'spy_call': 'Call',
+                'spy_put': 'Put',
+                'spx_cash': 'Spot',
+                'spx_future': 'Future',
+                'spx_call': 'Call',
+                'spx_put': 'Put'
             };
-            document.getElementById('currentDataType').textContent = displayNames[dataType] || dataType.replace('_', ' ').title();
+            document.getElementById('currentDataType').textContent = displayNames[dataType] || dataType.split('_')[1]?.charAt(0).toUpperCase() + dataType.split('_')[1]?.slice(1) || dataType;
             
             // Immediately clear date dropdowns to prevent showing old dates
             const yearSelect = document.getElementById('yearSelect');
@@ -1196,10 +1220,7 @@
             const strikeGroup = document.getElementById('strikeGroup');
             const expiryGroup = document.getElementById('expiryGroup');
             
-            if (dataType === 'nifty_call' || dataType === 'nifty_put' || 
-                dataType === 'banknifty_call' || dataType === 'banknifty_put' ||
-                dataType === 'midcpnifty_call' || dataType === 'midcpnifty_put' ||
-                dataType === 'sensex_call' || dataType === 'sensex_put') {
+            if (dataType.endsWith('_call') || dataType.endsWith('_put')) {
                 strikeGroup.style.display = 'flex';
                 expiryGroup.style.display = 'flex';
             } else {
@@ -1213,17 +1234,13 @@
             
             // Get dates for the new data type
             // Determine symbol from data type
-            let symbol = 'nifty';
-            if (dataType.startsWith('banknifty_')) {
-                symbol = 'banknifty';
-            } else if (dataType.startsWith('midcpnifty_')) {
-                symbol = 'midcpnifty';
-            } else if (dataType.startsWith('sensex_')) {
-                symbol = 'sensex';
-            }
+            let symbol = dataType.split('_')[0];
             
             // Fetch date range and populate date selectors
-            fetch(`/get_date_range?data_type=${dataType}&symbol=${symbol}`)
+            // Include data_source for backend routing
+            const ds = document.getElementById('dataSourceSelect')?.value || '';
+            const drUrl = `/get_date_range?data_type=${dataType}&symbol=${symbol}` + (ds ? `&data_source=${ds}` : '');
+            fetch(drUrl)
                 .then(response => response.json())
                 .then(data => {
                     console.log('Date range API response:', data);
@@ -1272,6 +1289,40 @@
             // Update date range for the new symbol
             updateDateRange();
         }
+        
+        function onDataSourceChange() {
+            const ds = document.getElementById('dataSourceSelect').value;
+            updateSymbolsForDataSource(ds);
+        }
+        
+        function updateSymbolsForDataSource(ds) {
+            const symbolSelect = document.getElementById('symbolSelect');
+            const indiaSymbols = [
+                { value: 'nifty', label: 'Nifty' },
+                { value: 'banknifty', label: 'Bank Nifty' },
+                { value: 'midcpnifty', label: 'Midcap Nifty' },
+                { value: 'sensex', label: 'Sensex' }
+            ];
+            const usSymbols = [
+                { value: 'qqq', label: 'QQQ' },
+                { value: 'spy', label: 'SPY' },
+                { value: 'spx', label: 'SPX' }
+            ];
+            const list = (ds === 'us' || ds === 'us_remote') ? usSymbols : indiaSymbols;
+            const previous = symbolSelect.value;
+            symbolSelect.innerHTML = '<option value=\"\">Choose a symbol...</option>';
+            list.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.value;
+                opt.textContent = s.label;
+                symbolSelect.appendChild(opt);
+            });
+            const target = list.find(s => s.value === previous) ? previous : list[0]?.value || '';
+            if (target) {
+                symbolSelect.value = target;
+                onSymbolChange();
+            }
+        }
 
         function updateDataTypesForSymbol(symbol) {
             const dataTypeSelect = document.getElementById('dataType');
@@ -1305,6 +1356,24 @@
                     { value: 'sensex_future', label: 'Future' },
                     { value: 'sensex_call', label: 'Call' },
                     { value: 'sensex_put', label: 'Put' }
+                ],
+                'qqq': [
+                    { value: 'qqq_cash', label: 'Spot' },
+                    { value: 'qqq_future', label: 'Future' },
+                    { value: 'qqq_call', label: 'Call' },
+                    { value: 'qqq_put', label: 'Put' }
+                ],
+                'spy': [
+                    { value: 'spy_cash', label: 'Spot' },
+                    { value: 'spy_future', label: 'Future' },
+                    { value: 'spy_call', label: 'Call' },
+                    { value: 'spy_put', label: 'Put' }
+                ],
+                'spx': [
+                    { value: 'spx_cash', label: 'Spot' },
+                    { value: 'spx_future', label: 'Future' },
+                    { value: 'spx_call', label: 'Call' },
+                    { value: 'spx_put', label: 'Put' }
                 ]
             };
             
@@ -1326,13 +1395,22 @@
         }
 
         function updateDateRange() {
-            const symbol = document.getElementById('symbolSelect').value;
+            let symbol = document.getElementById('symbolSelect').value;
             const dataType = document.getElementById('dataType').value;
             
-            if (!symbol || !dataType) return;
+            if (!dataType) return;
+            
+            // If symbol is not selected or we can determine it from dataType, prioritize dataType
+            if (dataType.includes('_')) {
+                symbol = dataType.split('_')[0];
+            }
+            
+            if (!symbol) return;
             
             // Fetch date range and populate date selectors
-            fetch(`/get_date_range?data_type=${dataType}&symbol=${symbol}`)
+            const ds = document.getElementById('dataSourceSelect')?.value || '';
+            const url = `/get_date_range?data_type=${dataType}&symbol=${symbol}` + (ds ? `&data_source=${ds}` : '');
+            fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     console.log('Date range API response:', data);
@@ -1517,18 +1595,13 @@
             // Fetch actual available dates from database to show real trading days
             const dataTypeSelect = document.getElementById('dataType');
             const currentDataType = dataTypeSelect ? dataTypeSelect.value : 'nifty_cash';
-            let currentSymbol = 'nifty';
-            if (currentDataType.startsWith('banknifty_')) {
-                currentSymbol = 'banknifty';
-            } else if (currentDataType.startsWith('midcpnifty_')) {
-                currentSymbol = 'midcpnifty';
-            } else if (currentDataType.startsWith('sensex_')) {
-                currentSymbol = 'sensex';
-            }
+            let currentSymbol = currentDataType.includes('_') ? currentDataType.split('_')[0] : 'nifty';
             
             console.log('Fetching dates for:', { currentDataType, currentSymbol });
             
-            fetch(`/get_dates?data_type=${currentDataType}&symbol=${currentSymbol}`)
+            const ds2 = document.getElementById('dataSourceSelect')?.value || '';
+            const datesUrl = `/get_dates?data_type=${currentDataType}&symbol=${currentSymbol}` + (ds2 ? `&data_source=${ds2}` : '');
+            fetch(datesUrl)
                 .then(response => response.json())
                 .then(data => {
                     console.log('Received data:', data);
@@ -1606,16 +1679,10 @@
                         });
                         
                         console.log(`Year dropdown updated with years: ${years.join(', ')}`);
-                        console.log('Date dropdowns ready - please select Year, Month, and Day manually');
                         
-                        // Set current date index to middle of range
-                        currentDateIndex = Math.floor(availableDates.length / 2);
-                        
-                        // Enable/disable navigation buttons
+                        // Do NOT auto-select any date; keep Year/Month/Day placeholders until user selects
+                        currentDateIndex = 0;
                         updateNavigationButtons();
-                        
-                        // Update debug display
-                        updateDebugDisplay();
                         
                         console.log('Database dates loaded:', {
                             totalCalendarDays,
@@ -1967,26 +2034,21 @@
         }
 
         function onDateChange() {
-            const dataType = document.getElementById('dataType').value;
+            const dataTypeSelect = document.getElementById('dataType');
+            const dataType = dataTypeSelect.value;
             const date = getSelectedDate();
+            
+            console.log('onDateChange triggered:', { dataType, date });
             
             if (!date) return;
             
             // If it's an option type, get strikes for the selected date
-            if (dataType === 'nifty_call' || dataType === 'nifty_put' || 
-                dataType === 'banknifty_call' || dataType === 'banknifty_put' ||
-                dataType === 'midcpnifty_call' || dataType === 'midcpnifty_put' ||
-                dataType === 'sensex_call' || dataType === 'sensex_put') {
+            if (dataType.endsWith('_call') || dataType.endsWith('_put')) {
                 
                 // Determine symbol from data type
-                let symbol = 'nifty';
-                if (dataType.startsWith('banknifty_')) {
-                    symbol = 'banknifty';
-                } else if (dataType.startsWith('midcpnifty_')) {
-                    symbol = 'midcpnifty';
-                } else if (dataType.startsWith('sensex_')) {
-                    symbol = 'sensex';
-                }
+                let symbol = dataType.includes('_') ? dataType.split('_')[0] : 'nifty';
+                
+                console.log(`Fetching strikes for ${symbol} ${dataType} on ${date}`);
                 
                 fetch(`/get_strikes?date=${date}&data_type=${dataType}&symbol=${symbol}`)
                     .then(response => response.json())
@@ -2014,23 +2076,17 @@
             const date = getSelectedDate();
             const strike = document.getElementById('strikeSelect').value;
             
+            console.log('onStrikeChange triggered:', { dataType, date, strike });
+            
             if (!date || !strike) return;
             
             // Get expiries for the selected date and strike
-            if (dataType === 'nifty_call' || dataType === 'nifty_put' || 
-                dataType === 'banknifty_call' || dataType === 'banknifty_put' ||
-                dataType === 'midcpnifty_call' || dataType === 'midcpnifty_put' ||
-                dataType === 'sensex_call' || dataType === 'sensex_put') {
+            if (dataType.endsWith('_call') || dataType.endsWith('_put')) {
                 
                 // Determine symbol from data type
-                let symbol = 'nifty';
-                if (dataType.startsWith('banknifty_')) {
-                    symbol = 'banknifty';
-                } else if (dataType.startsWith('midcpnifty_')) {
-                    symbol = 'midcpnifty';
-                } else if (dataType.startsWith('sensex_')) {
-                    symbol = 'sensex';
-                }
+                let symbol = dataType.includes('_') ? dataType.split('_')[0] : 'nifty';
+                
+                console.log(`Fetching expiries for ${symbol} ${dataType} on ${date} with strike ${strike}`);
                 
                 fetch(`/get_expiries?date=${date}&strike=${strike}&data_type=${dataType}&symbol=${symbol}`)
                     .then(response => response.json())
@@ -2107,10 +2163,7 @@
             }
 
             // For options, validate strike and expiry
-            if (dataType === 'nifty_call' || dataType === 'nifty_put' || 
-                dataType === 'banknifty_call' || dataType === 'banknifty_put' ||
-                dataType === 'midcpnifty_call' || dataType === 'midcpnifty_put' ||
-                dataType === 'sensex_call' || dataType === 'sensex_put') {
+            if (dataType.endsWith('_call') || dataType.endsWith('_put')) {
                 if (!strike) {
                     showError('Please select a strike price for options');
                     return;
@@ -2126,6 +2179,35 @@
             document.getElementById('chartSection').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('interactiveChartError').style.display = 'none';
+
+            window.lastChartData = null;
+            const interactiveContainer = document.getElementById('interactiveChartContainer');
+            if (interactiveContainer) {
+                interactiveContainer.style.display = 'none';
+            }
+            const chartImageEl = document.getElementById('chartImage');
+            if (chartImageEl) {
+                chartImageEl.style.display = 'block';
+                chartImageEl.src = '';
+            }
+            const tooltipEl = document.getElementById('ohlcTooltip');
+            if (tooltipEl) {
+                tooltipEl.style.display = 'none';
+            }
+            const indicatorBar = document.getElementById('indicatorToggleBar');
+            if (indicatorBar) {
+                indicatorBar.style.display = 'none';
+            }
+            const candleEl = document.getElementById('candlestickChart');
+            if (candleEl) {
+                candleEl.innerHTML = '';
+            }
+            if (typeof currentChart !== 'undefined' && currentChart) {
+                try {
+                    currentChart.remove();
+                } catch (e) {}
+                currentChart = null;
+            }
             
             // Clear interactive chart button
             const existingBtn = document.getElementById('interactiveChartBtn');
@@ -2140,15 +2222,17 @@
             formData.append('chart_type', chartType);
             formData.append('timeframe', timeframe);
             
-            // Add symbol parameter
-            let symbol = 'nifty';
-            if (dataType.startsWith('banknifty_')) {
-                symbol = 'banknifty';
-            } else if (dataType.startsWith('midcpnifty_')) {
-                symbol = 'midcpnifty';
-            } else if (dataType.startsWith('sensex_')) {
-                symbol = 'sensex';
+            // Include data source selection (e.g., 'india', 'us', 'us_remote')
+            const dsSelectEl = document.getElementById('dataSourceSelect');
+            if (dsSelectEl && dsSelectEl.value) {
+                formData.append('data_source', dsSelectEl.value);
+                console.log('Sending data_source to backend:', dsSelectEl.value);
+            } else {
+                console.log('No data_source selected or element missing');
             }
+            
+            // Add symbol parameter
+            let symbol = dataType.includes('_') ? dataType.split('_')[0] : 'nifty';
             formData.append('symbol', symbol);
             
             // Debug: Log timeframe being sent
@@ -2290,35 +2374,28 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Set initial data type indicator with user-friendly names
             const currentDataType = '{{ selected_data_type }}';
-            let currentSymbol = 'nifty'; // Default symbol
+            let currentSymbol = '{{ selected_symbol }}' || 'nifty';
+            
             const displayNames = {
-                'nifty_cash': 'Spot',
-                'nifty_future': 'Future',
-                'nifty_call': 'Call',
-                'nifty_put': 'Put',
-                'banknifty_cash': 'Spot',
-                'banknifty_future': 'Future',
-                'banknifty_call': 'Call',
-                'banknifty_put': 'Put',
-                'midcpnifty_cash': 'Spot',
-                'midcpnifty_future': 'Future',
-                'midcpnifty_call': 'Call',
-                'midcpnifty_put': 'Put',
-                'sensex_cash': 'Spot',
-                'sensex_future': 'Future',
-                'sensex_call': 'Call',
-                'sensex_put': 'Put'
+                'nifty_cash': 'Spot', 'nifty_future': 'Future', 'nifty_call': 'Call', 'nifty_put': 'Put',
+                'banknifty_cash': 'Spot', 'banknifty_future': 'Future', 'banknifty_call': 'Call', 'banknifty_put': 'Put',
+                'midcpnifty_cash': 'Spot', 'midcpnifty_future': 'Future', 'midcpnifty_call': 'Call', 'midcpnifty_put': 'Put',
+                'sensex_cash': 'Spot', 'sensex_future': 'Future', 'sensex_call': 'Call', 'sensex_put': 'Put',
+                'qqq_cash': 'Spot', 'qqq_future': 'Future', 'qqq_call': 'Call', 'qqq_put': 'Put',
+                'spy_cash': 'Spot', 'spy_future': 'Future', 'spy_call': 'Call', 'spy_put': 'Put',
+                'spx_cash': 'Spot', 'spx_future': 'Future', 'spx_call': 'Call', 'spx_put': 'Put'
             };
-            document.getElementById('currentDataType').textContent = displayNames[currentDataType] || currentDataType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            document.getElementById('currentDataType').textContent = displayNames[currentDataType] || 
+                (currentDataType.includes('_') ? 
+                    currentDataType.split('_')[1].charAt(0).toUpperCase() + currentDataType.split('_')[1].slice(1) : 
+                    currentDataType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()));
             
             // Show/hide strike and expiry dropdowns based on initial data type
             const strikeGroup = document.getElementById('strikeGroup');
             const expiryGroup = document.getElementById('expiryGroup');
             
-            if (currentDataType === 'nifty_call' || currentDataType === 'nifty_put' || 
-                currentDataType === 'banknifty_call' || currentDataType === 'banknifty_put' ||
-                currentDataType === 'midcpnifty_call' || currentDataType === 'midcpnifty_put' ||
-                currentDataType === 'sensex_call' || currentDataType === 'sensex_put') {
+            if (currentDataType.endsWith('_call') || currentDataType.endsWith('_put')) {
                 strikeGroup.style.display = 'flex';
                 expiryGroup.style.display = 'flex';
             } else {
@@ -2328,20 +2405,29 @@
             
             updateTimeframeDisplay();
             
-            let symbol = 'nifty';
-            if (currentDataType.startsWith('banknifty_')) {
-                symbol = 'banknifty';
-                currentSymbol = 'banknifty';
-            } else if (currentDataType.startsWith('midcpnifty_')) {
-                symbol = 'midcpnifty';
-                currentSymbol = 'midcpnifty';
-            } else if (currentDataType.startsWith('sensex_')) {
-                symbol = 'sensex';
-                currentSymbol = 'sensex';
+            // Determine symbol from currentDataType if not provided
+            let symbol = currentSymbol;
+            if (currentDataType.includes('_')) {
+                symbol = currentDataType.split('_')[0];
+            }
+            
+            const usSet = new Set(['qqq','spy','spx']);
+            const initialDS = usSet.has(symbol) ? 'us' : 'india';
+            const dsSelect = document.getElementById('dataSourceSelect');
+            if (dsSelect) {
+                dsSelect.value = initialDS;
+                updateSymbolsForDataSource(initialDS);
+                const symbolSelect = document.getElementById('symbolSelect');
+                if (symbolSelect) {
+                    symbolSelect.value = symbol;
+                    onSymbolChange();
+                }
             }
             
             // Fetch and populate date selectors
-            fetch(`/get_date_range?data_type=${currentDataType}&symbol=${symbol}`)
+            const initDs = document.getElementById('dataSourceSelect')?.value || '';
+            const initUrl = `/get_date_range?data_type=${currentDataType}&symbol=${symbol}` + (initDs ? `&data_source=${initDs}` : '');
+            fetch(initUrl)
                 .then(response => response.json())
                 .then(data => {
                     console.log('Initial date range API response:', data);

@@ -13,8 +13,18 @@ import math
 import io
 import base64
 import os 
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
+
+@app.after_request
+def _add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Max-Age'] = '86400'
+    return response
 
 # Configure matplotlib for web use
 plt.ioff()  # Turn off interactive mode
@@ -32,11 +42,18 @@ DB_CONFIG = {
     'use_unicode': True
 }
 
-def get_db_connection(max_retries=5):
+def get_db_connection(max_retries=5, symbol=None):
     """Get database connection with enhanced retry logic"""
     for attempt in range(max_retries):
         try:
-            connection = mysql.connector.connect(**DB_CONFIG)
+            db_name = DB_CONFIG.get('database', 'historicaldb')
+            if symbol:
+                s = str(symbol).lower()
+                if s in {'qqq', 'spy', 'spx'}:
+                    db_name = 'ushistoricaldb'
+            cfg = dict(DB_CONFIG)
+            cfg['database'] = db_name
+            connection = mysql.connector.connect(**cfg)
             # Test the connection with proper cleanup
             cursor = connection.cursor()
             cursor.execute("SELECT 1")
@@ -244,7 +261,27 @@ def get_date_range(data_type, symbol='nifty'):
             print(f"  returning CACHED date range for {cache_key}")
             return _date_range_cache[cache_key]
         
-        connection = get_db_connection()
+        # Normalize symbol
+        if symbol:
+            symbol = str(symbol).lower().replace(' ', '')
+        else:
+            symbol = 'nifty'
+            
+        # Map generic data types to specific tables
+        if data_type.lower() == 'spot':
+            data_type = f"{symbol}_cash"
+        elif data_type.lower() == 'future':
+            data_type = f"{symbol}_future"
+        elif data_type.lower() == 'call':
+            data_type = f"{symbol}_call"
+        elif data_type.lower() == 'put':
+            data_type = f"{symbol}_put"
+            
+        connection = get_db_connection(symbol=symbol)
+        if not connection:
+            print(f"  Failed to get database connection for {symbol}")
+            return None
+            
         cursor = connection.cursor()
         
         # Determine table name based on data type and symbol
@@ -272,6 +309,24 @@ def get_date_range(data_type, symbol='nifty'):
                 'sensex_future': 'sensex_future',
                 'sensex_call': 'sensex_call',
                 'sensex_put': 'sensex_put'
+            },
+            'qqq': {
+                'qqq_cash': 'qqq_cash',
+                'qqq_future': 'qqq_future',
+                'qqq_call': 'qqq_call',
+                'qqq_put': 'qqq_put'
+            },
+            'spy': {
+                'spy_cash': 'spy_cash',
+                'spy_future': 'spy_future',
+                'spy_call': 'spy_call',
+                'spy_put': 'spy_put'
+            },
+            'spx': {
+                'spx_cash': 'spx_cash',
+                'spx_future': 'spx_future',
+                'spx_call': 'spx_call',
+                'spx_put': 'spx_put'
             }
         }
         
@@ -282,28 +337,23 @@ def get_date_range(data_type, symbol='nifty'):
         print(f"  available tables for symbol '{symbol}': {list(symbol_tables.keys())}")
         print(f"  requested data_type: {data_type}")
         
-        # Get min and max dates
-        query = f"SELECT MIN(date) as min_date, MAX(date) as max_date FROM {table_name}"
+        # Build OHLC validity filter to avoid placeholder/invalid rows
+        ohlc_filter = "open IS NOT NULL AND high IS NOT NULL AND low IS NOT NULL AND close IS NOT NULL AND open > 0 AND high > 0 AND low > 0 AND close > 0"
+        has_ohlc = data_type.endswith('_cash') or data_type.endswith('_future') or data_type.endswith('_call') or data_type.endswith('_put')
+        # Get min and max dates over valid rows only
+        query = (
+            f"SELECT MIN(date) as min_date, MAX(date) as max_date FROM {table_name} "
+            f"{'WHERE ' + ohlc_filter if has_ohlc else ''}"
+        )
         print(f"  executing query: {query}")
         
-        # First, let's check if the table exists and has any data
-        check_query = f"SELECT COUNT(*) as row_count FROM {table_name}"
-        print(f"  checking table existence with: {check_query}")
-        cursor.execute(check_query)
-        count_result = cursor.fetchone()
-        print(f"  table row count: {count_result[0] if count_result else 'None'}")
-        
-        # Also list all available tables for debugging
+        # Execute query directly
         try:
-            cursor.execute("SHOW TABLES")
-            all_tables = cursor.fetchall()
-            table_names = [table[0] for table in all_tables]
-            print(f"  Available tables in database: {table_names}")
-        except Exception as e:
-            print(f"  Error listing tables: {e}")
-        
-        cursor.execute(query)
-        result = cursor.fetchone()
+            cursor.execute(query)
+            result = cursor.fetchone()
+        except mysql.connector.Error as err:
+            print(f"  Error querying {table_name}: {err}")
+            result = None
         
         # If no data found, try alternative table names
         if not result or not result[0] or not result[1]:
@@ -325,21 +375,17 @@ def get_date_range(data_type, symbol='nifty'):
                     
                 try:
                     print(f"  Trying alternative table: {alt_table}")
-                    alt_query = f"SELECT COUNT(*) as row_count FROM {alt_table}"
-                    cursor.execute(alt_query)
-                    alt_count = cursor.fetchone()
+                    query = (
+                        f"SELECT MIN(date) as min_date, MAX(date) as max_date FROM {alt_table} "
+                        f"{'WHERE ' + ohlc_filter if has_ohlc else ''}"
+                    )
+                    cursor.execute(query)
+                    result = cursor.fetchone()
                     
-                    if alt_count and alt_count[0] > 0:
-                        print(f"  Found data in {alt_table} with {alt_count[0]} rows")
-                        # Use this table instead
-                        query = f"SELECT MIN(date) as min_date, MAX(date) as max_date FROM {alt_table}"
-                        print(f"  executing alternative query: {query}")
-                        cursor.execute(query)
-                        result = cursor.fetchone()
-                        table_name = alt_table  # Update table name for logging
+                    if result and result[0] and result[1]:
+                        print(f"  Found data in {alt_table}")
+                        table_name = alt_table
                         break
-                    else:
-                        print(f"  No data in {alt_table}")
                 except Exception as e:
                     print(f"  Error checking {alt_table}: {e}")
                     continue
@@ -404,7 +450,27 @@ def get_available_dates(data_type, symbol='nifty'):
             print(f"  returning CACHED dates for {cache_key}: {len(_dates_cache[cache_key])} dates")
             return _dates_cache[cache_key]
         
-        connection = get_db_connection()
+        # Normalize symbol
+        if symbol:
+            symbol = str(symbol).lower().replace(' ', '')
+        else:
+            symbol = 'nifty'
+            
+        # Map generic data types to specific tables
+        if data_type.lower() == 'spot':
+            data_type = f"{symbol}_cash"
+        elif data_type.lower() == 'future':
+            data_type = f"{symbol}_future"
+        elif data_type.lower() == 'call':
+            data_type = f"{symbol}_call"
+        elif data_type.lower() == 'put':
+            data_type = f"{symbol}_put"
+            
+        connection = get_db_connection(symbol=symbol)
+        if not connection:
+            print(f"  Failed to get database connection for {symbol}")
+            return []
+            
         cursor = connection.cursor()
         
         # Determine table name based on data type and symbol
@@ -432,6 +498,24 @@ def get_available_dates(data_type, symbol='nifty'):
                 'sensex_future': 'sensex_future',
                 'sensex_call': 'sensex_call',
                 'sensex_put': 'sensex_put'
+            },
+            'qqq': {
+                'qqq_cash': 'qqq_cash',
+                'qqq_future': 'qqq_future',
+                'qqq_call': 'qqq_call',
+                'qqq_put': 'qqq_put'
+            },
+            'spy': {
+                'spy_cash': 'spy_cash',
+                'spy_future': 'spy_future',
+                'spy_call': 'spy_call',
+                'spy_put': 'spy_put'
+            },
+            'spx': {
+                'spx_cash': 'spx_cash',
+                'spx_future': 'spx_future',
+                'spx_call': 'spx_call',
+                'spx_put': 'spx_put'
             }
         }
         
@@ -444,13 +528,14 @@ def get_available_dates(data_type, symbol='nifty'):
         # Check if this is options data and handle differently
         is_options_data = data_type.endswith('_call') or data_type.endswith('_put')
         
-        # Use optimized query for all data types to improve performance
-        # This query is more efficient on large tables with many duplicate dates
-        query = f"SELECT DISTINCT date FROM {table_name} WHERE date IS NOT NULL ORDER BY date ASC"
-        
+        # Use optimized query paths
+        # Options tables are very large (per-strike/expiry rows), GROUP BY with SQL_BIG_RESULT
+        # can be faster for MySQL when producing many grouped rows
         if is_options_data:
+            query = f"SELECT SQL_BIG_RESULT date FROM {table_name} WHERE date IS NOT NULL GROUP BY date ORDER BY date ASC"
             print(f"  executing OPTIMIZED OPTIONS query: {query}")
         else:
+            query = f"SELECT DISTINCT date FROM {table_name} WHERE date IS NOT NULL ORDER BY date ASC"
             print(f"  executing STANDARD query: {query}")
         
         cursor.execute(query)
@@ -498,23 +583,16 @@ def get_available_dates(data_type, symbol='nifty'):
 def get_available_strikes(date, data_type, symbol='nifty'):
     """Get available strike prices for a given date and data type"""
     try:
-        # Check if it's a valid options data type for the given symbol
-        valid_options_types = {
-            'nifty': ['nifty_call', 'nifty_put'],
-            'banknifty': ['banknifty_call', 'banknifty_put'],
-            'midcpnifty': ['midcpnifty_call', 'midcpnifty_put'],
-            'sensex': ['sensex_call', 'sensex_put']
-        }
-        
-        if symbol not in valid_options_types or data_type not in valid_options_types[symbol]:
-            print(f"Invalid options data type '{data_type}' for symbol '{symbol}'")
+        connection = get_db_connection(symbol=symbol)
+        if not connection:
             return []
-        
-        connection = get_db_connection()
         cursor = connection.cursor()
         db_date = convert_date_to_db_format(date)
         
-        cursor.execute(f"SELECT DISTINCT strike FROM {data_type} WHERE date = %s ORDER BY strike", (db_date,))
+        # Determine table name
+        table_name = data_type # Default to data_type
+        
+        cursor.execute(f"SELECT DISTINCT strike FROM {table_name} WHERE date = %s ORDER BY strike", (db_date,))
         strikes = [row[0] for row in cursor.fetchall()]
         
         cursor.close()
@@ -529,23 +607,16 @@ def get_available_strikes(date, data_type, symbol='nifty'):
 def get_available_expiries(date, data_type, strike, symbol='nifty'):
     """Get available expiry dates for a given date, data type, and strike"""
     try:
-        # Check if it's a valid options data type for the given symbol
-        valid_options_types = {
-            'nifty': ['nifty_call', 'nifty_put'],
-            'banknifty': ['banknifty_call', 'banknifty_put'],
-            'midcpnifty': ['midcpnifty_call', 'midcpnifty_put'],
-            'sensex': ['sensex_call', 'sensex_put']
-        }
-        
-        if symbol not in valid_options_types or data_type not in valid_options_types[symbol]:
-            print(f"Invalid options data type '{data_type}' for symbol '{symbol}'")
+        connection = get_db_connection(symbol=symbol)
+        if not connection:
             return []
-        
-        connection = get_db_connection()
         cursor = connection.cursor()
         db_date = convert_date_to_db_format(date)
         
-        cursor.execute(f"SELECT DISTINCT expiry FROM {data_type} WHERE date = %s AND strike = %s ORDER BY expiry", (db_date, strike))
+        # Determine table name
+        table_name = data_type # Default to data_type
+        
+        cursor.execute(f"SELECT DISTINCT expiry FROM {table_name} WHERE date = %s AND strike = %s ORDER BY expiry", (db_date, strike))
         expiries = [row[0] for row in cursor.fetchall()]
         
         cursor.close()
@@ -557,14 +628,504 @@ def get_available_expiries(date, data_type, strike, symbol='nifty'):
         print(f"Error getting available expiries: {e}")
         return []
 
-def get_ohlc_data_for_date(date, data_type, strike=None, expiry=None, symbol='nifty'):
+import os
+import paramiko
+
+# --- Remote Access Helper ---
+def _get_remote_sftp():
+    """Establish SFTP connection if local parquet path is missing."""
+    # Check if we are running on the server where data exists locally
+    local_parquet_path = "/home/usubuntu/parquet_data"
+    if os.path.exists(local_parquet_path):
+        # We are on the server, use local files
+        return None
+
+    # We are running locally, connect to remote server
+    host = os.environ.get('REMOTE_SSH_HOST', '106.51.63.60')
+    try:
+        port = int(os.environ.get('REMOTE_SSH_PORT', 222))
+        user = os.environ.get('REMOTE_SSH_USER', 'usubuntu')
+        pwd = os.environ.get('REMOTE_SSH_PASSWORD', 'usdata')
+        
+        transport = paramiko.Transport((host, port))
+        transport.connect(username=user, password=pwd)
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        return sftp
+    except Exception as e:
+        print(f"SFTP Connection Error to {host}: {e}")
+        return None
+
+def _remote_exists(path, sftp=None):
+    if sftp:
+        try:
+            sftp.stat(path)
+            return True
+        except IOError:
+            return False
+    return os.path.exists(path)
+
+def _remote_listdir(path, sftp=None):
+    if sftp:
+        try:
+            return sftp.listdir(path)
+        except IOError:
+            return []
+    if os.path.isdir(path):
+        return os.listdir(path)
+    return []
+
+def _remote_isdir(path, sftp=None):
+    if sftp:
+        try:
+            attr = sftp.stat(path)
+            # Check if mode indicates directory (S_IFDIR = 0o040000)
+            return (attr.st_mode & 0o040000) == 0o040000
+        except IOError:
+            return False
+    return os.path.isdir(path)
+
+def _read_parquet_auto(path, sftp=None):
+    """Read parquet from local path or open SFTP file object."""
+    if sftp:
+        # Read remote file into memory buffer
+        with sftp.open(path, 'rb') as f:
+            return pd.read_parquet(io.BytesIO(f.read()))
+    return pd.read_parquet(path)
+
+def _read_us_remote_cash_parquet(date, symbol):
+    """Read US cash (spot) data from parquet files on remote/local path."""
+    sftp = _get_remote_sftp()
+    try:
+        # Expected path format:
+        # /home/usubuntu/parquet_data/cash/{symbol}/{YYYY}/{MM}/{symbol}_cash_{YYYYMMDD}.parquet
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        yyyy = date_obj.strftime('%Y')
+        mm = date_obj.strftime('%m')
+        yyyymmdd = date_obj.strftime('%Y%m%d')
+        base_dir = os.environ.get('PARQUET_BASE_DIR', "/home/usubuntu/parquet_data")
+        cash_dir = os.path.join(base_dir, "cash")
+        symbol_lower = symbol.lower()
+        filename = f"{symbol_lower}_cash_{yyyymmdd}.parquet"
+        file_path = os.path.join(cash_dir, symbol_lower, yyyy, mm, filename)
+        
+        # Determine execution context
+        mode = "SFTP" if sftp else "Local"
+        print(f"US Remote ({mode}): Checking parquet path: {file_path}")
+        
+        if not _remote_exists(file_path, sftp):
+            print(f"US Remote ({mode}): Parquet file not found, falling back")
+            return None
+        
+        print(f"US Remote ({mode}): Reading parquet file...")
+        df = _read_parquet_auto(file_path, sftp)
+        print(f"US Remote ({mode}): Parquet read success, rows={len(df)}")
+        
+        # Normalize columns: require open/high/low/close and time
+        col_map = {c.lower(): c for c in df.columns}
+        required = ['open', 'high', 'low', 'close']
+        for r in required:
+            if r not in col_map:
+                return None
+        
+        # Determine time column
+        time_col = None
+        for candidate in ['time', 'timestamp', 'datetime']:
+            if candidate in col_map:
+                time_col = col_map[candidate]
+                break
+        if time_col is None:
+            # Try to build time from index if it's datetime-like
+            if isinstance(df.index, pd.DatetimeIndex):
+                dt_series = df.index
+            else:
+                return None
+        else:
+            # If time column is datetime-like, use it directly
+            dt_series = df[time_col]
+            if not pd.api.types.is_datetime64_any_dtype(dt_series):
+                # If numeric seconds since midnight
+                if pd.api.types.is_integer_dtype(dt_series) or pd.api.types.is_float_dtype(dt_series):
+                    seconds = dt_series.astype(int)
+                    hours = (seconds // 3600).astype(int)
+                    minutes = ((seconds % 3600) // 60).astype(int)
+                    secs = (seconds % 60).astype(int)
+                    date_str = date
+                    dt_series = pd.to_datetime([f"{date_str} {h:02d}:{m:02d}:{s:02d}" for h, m, s in zip(hours, minutes, secs)])
+                else:
+                    # Attempt to parse strings
+                    try:
+                        dt_series = pd.to_datetime(dt_series)
+                    except Exception:
+                        return None
+        
+        df_out = pd.DataFrame({
+            'open': df[col_map['open']].astype(float),
+            'high': df[col_map['high']].astype(float),
+            'low': df[col_map['low']].astype(float),
+            'close': df[col_map['close']].astype(float),
+            'datetime': dt_series
+        })
+        df_out['date_readable'] = date
+        df_out['time_readable'] = df_out['datetime'].dt.strftime('%H:%M:%S')
+        df_out['time'] = df_out['datetime'].dt.hour * 3600 + df_out['datetime'].dt.minute * 60 + df_out['datetime'].dt.second
+        return df_out
+    except Exception as e:
+        print(f"Error reading US remote parquet: {e}")
+        return None
+
+def _read_us_remote_future_parquet(date, symbol):
+    """Read US futures data from parquet files on remote/local path."""
+    sftp = _get_remote_sftp()
+    try:
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        yyyy = date_obj.strftime('%Y')
+        mm = date_obj.strftime('%m')
+        yyyymmdd = date_obj.strftime('%Y%m%d')
+        base_dir = os.environ.get('PARQUET_BASE_DIR', "/home/usubuntu/parquet_data")
+        futures_dir = os.path.join(base_dir, "futures")
+        symbol_lower = symbol.lower()
+        candidates = [
+            f"{symbol_lower}_future_{yyyymmdd}.parquet",
+            f"{symbol_lower}_futures_{yyyymmdd}.parquet",
+        ]
+        file_path = None
+        for fname in candidates:
+            p = os.path.join(futures_dir, symbol_lower, yyyy, mm, fname)
+            if _remote_exists(p, sftp):
+                file_path = p
+                break
+        
+        mode = "SFTP" if sftp else "Local"
+        if file_path is None:
+            print(f"US Remote Future ({mode}): Parquet file not found for either pattern")
+            return None
+        print(f"US Remote Future ({mode}): Using parquet path: {file_path}")
+        
+        print(f"US Remote Future ({mode}): Reading parquet file...")
+        df = _read_parquet_auto(file_path, sftp)
+        print(f"US Remote Future ({mode}): Parquet read success, rows={len(df)}")
+        
+        # Normalize columns: require open/high/low/close and time
+        col_map = {c.lower(): c for c in df.columns}
+        required = ['open', 'high', 'low', 'close']
+        for r in required:
+            if r not in col_map:
+                return None
+        
+        # Determine time column
+        time_col = None
+        for candidate in ['time', 'timestamp', 'datetime']:
+            if candidate in col_map:
+                time_col = col_map[candidate]
+                break
+        if time_col is None:
+            if isinstance(df.index, pd.DatetimeIndex):
+                dt_series = df.index
+            else:
+                return None
+        else:
+            dt_series = df[time_col]
+            if not pd.api.types.is_datetime64_any_dtype(dt_series):
+                if pd.api.types.is_integer_dtype(dt_series) or pd.api.types.is_float_dtype(dt_series):
+                    seconds = dt_series.astype(int)
+                    hours = (seconds // 3600).astype(int)
+                    minutes = ((seconds % 3600) // 60).astype(int)
+                    secs = (seconds % 60).astype(int)
+                    date_str = date
+                    dt_series = pd.to_datetime([f"{date_str} {h:02d}:{m:02d}:{s:02d}" for h, m, s in zip(hours, minutes, secs)])
+                else:
+                    try:
+                        dt_series = pd.to_datetime(dt_series)
+                    except Exception:
+                        return None
+        
+        df_out = pd.DataFrame({
+            'open': df[col_map['open']].astype(float),
+            'high': df[col_map['high']].astype(float),
+            'low': df[col_map['low']].astype(float),
+            'close': df[col_map['close']].astype(float),
+            'datetime': dt_series
+        })
+        df_out['date_readable'] = date
+        df_out['time_readable'] = df_out['datetime'].dt.strftime('%H:%M:%S')
+        df_out['time'] = df_out['datetime'].dt.hour * 3600 + df_out['datetime'].dt.minute * 60 + df_out['datetime'].dt.second
+        return df_out
+    except Exception as e:
+        print(f"Error reading US remote future parquet: {e}")
+        return None
+
+def _list_us_remote_cash_dates(symbol):
+    sftp = _get_remote_sftp()
+    try:
+        base_dir = os.environ.get('PARQUET_BASE_DIR', "/home/usubuntu/parquet_data")
+        cash_dir = os.path.join(base_dir, "cash")
+        symbol_lower = (symbol or '').lower()
+        root_dir = os.path.join(cash_dir, symbol_lower)
+        if not _remote_isdir(root_dir, sftp):
+            return []
+        dates = set()
+        for y in _remote_listdir(root_dir, sftp):
+            y_path = os.path.join(root_dir, y)
+            if not _remote_isdir(y_path, sftp):
+                continue
+            for m in _remote_listdir(y_path, sftp):
+                m_path = os.path.join(y_path, m)
+                if not _remote_isdir(m_path, sftp):
+                    continue
+                for fname in _remote_listdir(m_path, sftp):
+                    if fname.startswith(f"{symbol_lower}_cash_") and fname.endswith(".parquet"):
+                        try:
+                            part = fname.split("_")[-1].replace(".parquet", "")
+                            dt = datetime.strptime(part, "%Y%m%d")
+                            dates.add(dt.strftime("%Y-%m-%d"))
+                        except:
+                            pass
+        return sorted(list(dates))
+    except Exception as e:
+        print(f"Error listing US remote dates: {e}")
+        return []
+
+def _us_remote_date_range(symbol):
+    try:
+        dates = _list_us_remote_cash_dates(symbol)
+        if not dates:
+            return None
+        return {'min_date': dates[0], 'max_date': dates[-1]}
+    except Exception as e:
+        print(f"Error computing US remote date range: {e}")
+        return None
+
+def _list_us_remote_future_dates(symbol):
+    sftp = _get_remote_sftp()
+    try:
+        base_dir = os.environ.get('PARQUET_BASE_DIR', "/home/usubuntu/parquet_data")
+        futures_dir = os.path.join(base_dir, "futures")
+        symbol_lower = (symbol or '').lower()
+        root_dir = os.path.join(futures_dir, symbol_lower)
+        if not _remote_isdir(root_dir, sftp):
+            return []
+        dates = set()
+        for y in _remote_listdir(root_dir, sftp):
+            y_path = os.path.join(root_dir, y)
+            if not _remote_isdir(y_path, sftp):
+                continue
+            for m in _remote_listdir(y_path, sftp):
+                m_path = os.path.join(y_path, m)
+                if not _remote_isdir(m_path, sftp):
+                    continue
+                for fname in _remote_listdir(m_path, sftp):
+                    if fname.endswith(".parquet") and (
+                        fname.startswith(f"{symbol_lower}_future_") or
+                        fname.startswith(f"{symbol_lower}_futures_")
+                    ):
+                        try:
+                            part = fname.split("_")[-1].replace(".parquet", "")
+                            dt = datetime.strptime(part, "%Y%m%d")
+                            dates.add(dt.strftime("%Y-%m-%d"))
+                        except:
+                            pass
+        return sorted(list(dates))
+    except Exception as e:
+        print(f"Error listing US remote future dates: {e}")
+        return []
+
+def _us_remote_future_date_range(symbol):
+    try:
+        dates = _list_us_remote_future_dates(symbol)
+        if not dates:
+            return None
+        return {'min_date': dates[0], 'max_date': dates[-1]}
+    except Exception as e:
+        print(f"Error computing US remote future date range: {e}")
+        return None
+
+def _read_us_remote_option_parquet(date, symbol, kind, strike, expiry):
+    sftp = _get_remote_sftp()
+    try:
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        yyyy = date_obj.strftime('%Y')
+        mm = date_obj.strftime('%m')
+        base_dir = os.environ.get('PARQUET_BASE_DIR', "/home/usubuntu/parquet_data")
+        options_dir = os.path.join(base_dir, "options")
+        s = (symbol or '').lower()
+        k = (kind or '').lower()
+        # Support both layouts:
+        # /options/{symbol}/{kind}/{YYYY}/{MM}/
+        # /options/{symbol}_{kind}/{YYYY}/{MM}/
+        candidates = [
+            os.path.join(options_dir, s, k, yyyy, mm),
+            os.path.join(options_dir, f"{s}_{k}", yyyy, mm),
+        ]
+        dir_path = next((p for p in candidates if _remote_isdir(p, sftp)), None)
+        
+        mode = "SFTP" if sftp else "Local"
+        if not dir_path or not _remote_isdir(dir_path, sftp):
+            print(f"US Remote Options ({mode}): directory missing {dir_path}")
+            return None
+        
+        files = [os.path.join(dir_path, f) for f in _remote_listdir(dir_path, sftp) if f.endswith(".parquet")]
+        if not files:
+            print(f"US Remote Options ({mode}): no parquet files in {dir_path}")
+            return None
+        frames = []
+        for fp in files:
+            try:
+                df = _read_parquet_auto(fp, sftp)
+                cols = {c.lower(): c for c in df.columns}
+                req = ['open','high','low','close']
+                if any(r not in cols for r in req):
+                    continue
+                time_col = None
+                for candidate in ['time','timestamp','datetime']:
+                    if candidate in cols:
+                        time_col = cols[candidate]
+                        break
+                if time_col is None and not isinstance(df.index, pd.DatetimeIndex):
+                    continue
+                if time_col is None:
+                    dt_series = df.index
+                else:
+                    dt_series = df[time_col]
+                    if not pd.api.types.is_datetime64_any_dtype(dt_series):
+                        if pd.api.types.is_integer_dtype(dt_series) or pd.api.types.is_float_dtype(dt_series):
+                            seconds = dt_series.astype(int)
+                            hours = (seconds // 3600).astype(int)
+                            minutes = ((seconds % 3600) // 60).astype(int)
+                            secs = (seconds % 60).astype(int)
+                            dt_series = pd.to_datetime([f"{date} {h:02d}:{m:02d}:{s:02d}" for h,m,s in zip(hours,minutes,secs)])
+                        else:
+                            try:
+                                dt_series = pd.to_datetime(dt_series)
+                            except Exception:
+                                continue
+                df['__dt__'] = dt_series
+                df['__date__'] = df['__dt__'].dt.strftime('%Y-%m-%d')
+                if 'strike' in cols and strike is not None:
+                    try:
+                        strike_val = float(strike)
+                        df = df[df[cols['strike']].astype(float) == strike_val]
+                    except Exception:
+                        pass
+                if 'expiry' in cols and expiry is not None:
+                    try:
+                        exp_param = str(expiry)
+                        if '-' in exp_param:
+                            # YYYY-MM-DD -> YYMMDD
+                            from datetime import datetime as _dt
+                            exp_param = _dt.strptime(exp_param, "%Y-%m-%d").strftime("%y%m%d")
+                        elif len(exp_param) == 8 and exp_param.isdigit():
+                            # YYYYMMDD -> YYMMDD
+                            exp_param = exp_param[2:]
+                        # cast both sides to int for reliable match
+                        exp_int = int(exp_param)
+                        df = df[df[cols['expiry']].astype(int) == exp_int]
+                    except Exception:
+                        pass
+                df = df[df['__date__'] == date]
+                if len(df) == 0:
+                    continue
+                out = pd.DataFrame({
+                    'open': df[cols['open']].astype(float),
+                    'high': df[cols['high']].astype(float),
+                    'low': df[cols['low']].astype(float),
+                    'close': df[cols['close']].astype(float),
+                    'datetime': df['__dt__']
+                })
+                out['date_readable'] = date
+                out['time_readable'] = out['datetime'].dt.strftime('%H:%M:%S')
+                out['time'] = out['datetime'].dt.hour * 3600 + out['datetime'].dt.minute * 60 + out['datetime'].dt.second
+                frames.append(out)
+            except Exception as e:
+                print(f"US Remote Options: error reading {fp}: {e}")
+                continue
+        if not frames:
+            return None
+        result = pd.concat(frames).sort_values('datetime')
+        return result
+    except Exception as e:
+        print(f"Error reading US remote option parquet: {e}")
+        return None
+
+def _list_us_remote_option_dates(symbol, kind):
+    sftp = _get_remote_sftp()
+    try:
+        base_dir = os.environ.get('PARQUET_BASE_DIR', "/home/usubuntu/parquet_data")
+        options_dir = os.path.join(base_dir, "options")
+        s = (symbol or '').lower()
+        k = (kind or '').lower()
+        # Support both layouts
+        candidates = [
+            os.path.join(options_dir, s, k),
+            os.path.join(options_dir, f"{s}_{k}")
+        ]
+        root = next((p for p in candidates if _remote_isdir(p, sftp)), None)
+        if not root:
+            return []
+        import re
+        token = re.compile(r'(\d{8})')
+        dates = set()
+        for y in _remote_listdir(root, sftp):
+            yp = os.path.join(root, y)
+            if not _remote_isdir(yp, sftp): continue
+            for m in _remote_listdir(yp, sftp):
+                mp = os.path.join(yp, m)
+                if not _remote_isdir(mp, sftp): continue
+                for fname in _remote_listdir(mp, sftp):
+                    if not fname.endswith(".parquet"): continue
+                    mdate = token.search(fname)
+                    if mdate:
+                        try:
+                            part = mdate.group(1)
+                            dt = datetime.strptime(part, "%Y%m%d")
+                            dates.add(dt.strftime("%Y-%m-%d"))
+                        except:
+                            pass
+        return sorted(list(dates))
+    except Exception as e:
+        print(f"Error listing US remote option dates: {e}")
+        return []
+
+def _us_remote_option_date_range(symbol, kind):
+    dates = _list_us_remote_option_dates(symbol, kind)
+    if not dates:
+        return None
+    return {'min_date': dates[0], 'max_date': dates[-1]}
+
+def get_ohlc_data_for_date(date, data_type, strike=None, expiry=None, symbol='nifty', data_source=None):
     """Get OHLC data for a specific date and data type"""
     try:
         db_date = convert_date_to_db_format(date)
         if db_date is None:
             return None
         
-        connection = get_db_connection()
+        # US Remote path (parquet) support for cash data
+        if data_source == 'us_remote':
+            print(f"Data source specified: us_remote for symbol={symbol}, data_type={data_type}, date={date}")
+            s = (symbol or '').lower()
+            if s in ['qqq', 'spy', 'spx'] and (data_type.endswith('_cash') or data_type in [f'{s}_cash']):
+                parquet_df = _read_us_remote_cash_parquet(date, s)
+                if parquet_df is not None and len(parquet_df) > 0:
+                    print("US Remote: Using parquet data")
+                    return parquet_df
+                print("US Remote: Cash parquet missing/empty; not using database for us_remote")
+                return None
+            if s in ['qqq', 'spy', 'spx'] and (data_type.endswith('_future') or data_type in [f'{s}_future']):
+                parquet_df = _read_us_remote_future_parquet(date, s)
+                if parquet_df is not None and len(parquet_df) > 0:
+                    print("US Remote: Using futures parquet data")
+                    return parquet_df
+                print("US Remote: Futures parquet missing/empty; not using database for us_remote")
+                return None
+            if s in ['qqq', 'spy', 'spx'] and (data_type.endswith('_call') or data_type.endswith('_put') or data_type in [f'{s}_call', f'{s}_put']):
+                kind = 'call' if data_type.endswith('_call') or data_type == f'{s}_call' else 'put'
+                parquet_df = _read_us_remote_option_parquet(date, s, kind, strike, expiry)
+                if parquet_df is not None and len(parquet_df) > 0:
+                    print("US Remote: Using options parquet data")
+                    return parquet_df
+                print("US Remote: Options parquet missing/empty; not using database for us_remote")
+                return None
+        
+        connection = get_db_connection(symbol=symbol)
         cursor = connection.cursor()
         
         # Determine table name based on data type and symbol
@@ -592,6 +1153,24 @@ def get_ohlc_data_for_date(date, data_type, strike=None, expiry=None, symbol='ni
                 'sensex_future': 'sensex_future',
                 'sensex_call': 'sensex_call',
                 'sensex_put': 'sensex_put'
+            },
+            'qqq': {
+                'qqq_cash': 'qqq_cash',
+                'qqq_future': 'qqq_future',
+                'qqq_call': 'qqq_call',
+                'qqq_put': 'qqq_put'
+            },
+            'spy': {
+                'spy_cash': 'spy_cash',
+                'spy_future': 'spy_future',
+                'spy_call': 'spy_call',
+                'spy_put': 'spy_put'
+            },
+            'spx': {
+                'spx_cash': 'spx_cash',
+                'spx_future': 'spx_future',
+                'spx_call': 'spx_call',
+                'spx_put': 'spx_put'
             }
         }
         
@@ -599,16 +1178,7 @@ def get_ohlc_data_for_date(date, data_type, strike=None, expiry=None, symbol='ni
         table_name = symbol_tables.get(data_type, list(symbol_tables.values())[0])
         
         # For options, include strike and expiry in the query
-        if symbol == 'nifty' and data_type in ['nifty_call', 'nifty_put'] and strike and expiry:
-            query = f"SELECT * FROM {table_name} WHERE date = %s AND strike = %s AND expiry = %s ORDER BY time"
-            cursor.execute(query, (db_date, strike, expiry))
-        elif symbol == 'banknifty' and data_type in ['banknifty_call', 'banknifty_put'] and strike and expiry:
-            query = f"SELECT * FROM {table_name} WHERE date = %s AND strike = %s AND expiry = %s ORDER BY time"
-            cursor.execute(query, (db_date, strike, expiry))
-        elif symbol == 'midcpnifty' and data_type in ['midcpnifty_call', 'midcpnifty_put'] and strike and expiry:
-            query = f"SELECT * FROM {table_name} WHERE date = %s AND strike = %s AND expiry = %s ORDER BY time"
-            cursor.execute(query, (db_date, strike, expiry))
-        elif symbol == 'sensex' and data_type in ['sensex_call', 'sensex_put'] and strike and expiry:
+        if (data_type.endswith('_call') or data_type.endswith('_put')) and strike and expiry:
             query = f"SELECT * FROM {table_name} WHERE date = %s AND strike = %s AND expiry = %s ORDER BY time"
             cursor.execute(query, (db_date, strike, expiry))
         else:
@@ -748,7 +1318,7 @@ def calculate_time_frame(df):
             'data_intervals': 'N/A'
         }
 
-def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
+def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash', symbol='nifty'):
     """Resample 1-minute OHLC data to specified interval"""
     if df is None or len(df) == 0:
         return None
@@ -805,27 +1375,44 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
         # Scale down OHLC values by dividing by 100 (convert from paise to rupees)
         df_scaled = df.copy()
         
-        if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
-            sample_values = df['open'].head(5).tolist()
-            print(f"DEBUG: Options sample values: {sample_values}")
-            if all(val < 1000 for val in sample_values):
-                print("DEBUG: Options data already in rupees, no scaling needed")
+        if data_type.endswith('_call') or data_type.endswith('_put'):
+            is_us_symbol = symbol.lower() in ['qqq', 'spy', 'spx'] if symbol else False
+            if is_us_symbol:
+                print("DEBUG: US options detected; scaling disabled (keep original values)")
                 df_scaled['open'] = df['open']
                 df_scaled['high'] = df['high']
                 df_scaled['low'] = df['low']
                 df_scaled['close'] = df['close']
             else:
-                print("DEBUG: Options data in paise, scaling by 100")
+                sample_values = df['open'].head(5).tolist()
+                print(f"DEBUG: Options sample values: {sample_values}")
+                if all(val < 1000 for val in sample_values):
+                    print("DEBUG: Options data already in rupees, no scaling needed")
+                    df_scaled['open'] = df['open']
+                    df_scaled['high'] = df['high']
+                    df_scaled['low'] = df['low']
+                    df_scaled['close'] = df['close']
+                else:
+                    print("DEBUG: Options data in paise, scaling by 100")
+                    df_scaled['open'] = df['open'] / 100
+                    df_scaled['high'] = df['high'] / 100
+                    df_scaled['low'] = df['low'] / 100
+                    df_scaled['close'] = df['close'] / 100
+        else:
+            # For US symbols, NEVER scale; keep values exactly as provided
+            is_us_symbol = symbol.lower() in ['qqq', 'spy', 'spx'] if symbol else False
+            if is_us_symbol:
+                print("DEBUG: US cash/future data detected; scaling disabled (keep original values)")
+                df_scaled['open'] = df['open']
+                df_scaled['high'] = df['high']
+                df_scaled['low'] = df['low']
+                df_scaled['close'] = df['close']
+            else:
+                print("DEBUG: Cash/Future data scaling by 100")
                 df_scaled['open'] = df['open'] / 100
                 df_scaled['high'] = df['high'] / 100
                 df_scaled['low'] = df['low'] / 100
                 df_scaled['close'] = df['close'] / 100
-        else:
-            print("DEBUG: Cash/Future data scaling by 100")
-            df_scaled['open'] = df['open'] / 100
-            df_scaled['high'] = df['high'] / 100
-            df_scaled['low'] = df['low'] / 100
-            df_scaled['close'] = df['close'] / 100
         
         # Debug: Print scaling results
         print(f"DEBUG: Scaling results (first 3 rows):")
@@ -839,7 +1426,7 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
         print(f"  Scaled Close: {df_scaled['close'].head(3).tolist()}")
         
         # For options data, filter out unrealistic small values that are likely data errors
-        if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
+        if data_type.endswith('_call') or data_type.endswith('_put'):
             print(f"DEBUG: Filtering unrealistic values for options data...")
             original_count = len(df_scaled)
             
@@ -921,7 +1508,7 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
         # Filter out records with mixed data before resampling
         # Separate logic for options data vs cash/future data
         if len(df_scaled) > 0:
-            if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
+            if data_type.endswith('_call') or data_type.endswith('_put'):
                 # ===== OPTIONS DATA LOGIC (CALL/PUT) =====
                 print("DEBUG: Applying OPTIONS data filtering logic")
                 
@@ -957,15 +1544,23 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
                 # ===== CASH/FUTURE DATA LOGIC (SPOT/FUTURE) =====
                 print("DEBUG: Applying CASH/FUTURE data filtering logic")
                 
-                # For cash/future data, after scaling by 100, values should be in hundreds range
-                # Original values are in thousands (18000-19000), after /100 they become 180-190
+                # Check for US symbols which have much higher prices
+                is_us_symbol = symbol.lower() in ['qqq', 'spy', 'spx'] if symbol else False
+                
+                # For cash/future data, after scaling by 100, values should be in a reasonable range
+                # Original values are in thousands, after /100 they become hundreds/thousands
+                # Very permissive upper limit for US raw values (no scaling)
+                post_scale_max = pd.concat([df_scaled['open'], df_scaled['high'], df_scaled['low'], df_scaled['close']]).max()
+                default_upper = 100000000 if is_us_symbol else 10000
+                upper_limit = max(1000, default_upper, post_scale_max * 2 if pd.notnull(post_scale_max) else default_upper)
+                
                 valid_mask = (
-                    (df_scaled['open'] >= 100) & (df_scaled['open'] <= 10000) &
-                    (df_scaled['high'] >= 100) & (df_scaled['high'] <= 10000) &
-                    (df_scaled['low'] >= 100) & (df_scaled['low'] <= 10000) &
-                    (df_scaled['close'] >= 100) & (df_scaled['close'] <= 10000)
+                    (df_scaled['open'] >= 100) & (df_scaled['open'] <= upper_limit) &
+                    (df_scaled['high'] >= 100) & (df_scaled['high'] <= upper_limit) &
+                    (df_scaled['low'] >= 100) & (df_scaled['low'] <= upper_limit) &
+                    (df_scaled['close'] >= 100) & (df_scaled['close'] <= upper_limit)
                 )
-                print("DEBUG: Using cash/future range (100-10000) for scaled data")
+                print(f"DEBUG: Using cash/future range (100-{upper_limit}) for scaled data")
             
             df_scaled = df_scaled[valid_mask]
             print(f"DEBUG: Filtered mixed data - kept {len(df_scaled)} records out of original")
@@ -976,7 +1571,7 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
         
         try:
             # For options data, use more careful resampling to avoid picking wrong values
-            if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
+            if data_type.endswith('_call') or data_type.endswith('_put'):
                 print("DEBUG: Using options-specific resampling logic")
                 # Filter out obviously wrong values (like 1) before resampling
                 df_clean = df_scaled.copy()
@@ -1026,7 +1621,7 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
         # After resampling, filter out any remaining mixed data
         if len(resampled) > 0:
             # Separate filtering logic for options vs cash/future data
-            if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
+            if data_type.endswith('_call') or data_type.endswith('_put'):
                 # ===== OPTIONS DATA LOGIC (CALL/PUT) =====
                 print("DEBUG: Applying OPTIONS data filtering after resampling")
                 print(f"DEBUG: Before filtering - resampled values:")
@@ -1080,12 +1675,17 @@ def resample_ohlc_data(df, interval_minutes, data_type='nifty_cash'):
                 
                 if has_large_values and has_small_values:
                     print("WARNING: Mixed data detected in resampled results - filtering out small values")
-                    # Keep only records where all values are in the hundreds range (after scaling)
+                    
+                    # Check for US symbols which have much higher prices
+                    is_us_symbol = symbol.lower() in ['qqq', 'spy', 'spx'] if symbol else False
+                    upper_limit = 1000000 if is_us_symbol else 10000
+                    
+                    # Keep only records where all values are in a reasonable range (after scaling)
                     valid_mask = (
-                        (resampled['open'] >= 100) & (resampled['open'] <= 10000) &
-                        (resampled['high'] >= 100) & (resampled['high'] <= 10000) &
-                        (resampled['low'] >= 100) & (resampled['low'] <= 10000) &
-                        (resampled['close'] >= 100) & (resampled['close'] <= 10000)
+                        (resampled['open'] >= 100) & (resampled['open'] <= upper_limit) &
+                        (resampled['high'] >= 100) & (resampled['high'] <= upper_limit) &
+                        (resampled['low'] >= 100) & (resampled['low'] <= upper_limit) &
+                        (resampled['close'] >= 100) & (resampled['close'] <= upper_limit)
                     )
                     resampled = resampled[valid_mask]
                     print(f"DEBUG: After filtering mixed resampled data - kept {len(resampled)} records")
@@ -1295,7 +1895,7 @@ def create_candlestick_chart_base64(df, date, interval_minutes, data_type, symbo
     
     print(f"  Data range - min: {min_val}, max: {max_val}")
     
-    if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
+    if data_type.endswith('_call') or data_type.endswith('_put'):
         # For options data, use flexible range based on actual values
         if max_val > 1000 and min_val > 100:  # All values are large (like call data)
             min_price_threshold = 0.01
@@ -1311,10 +1911,10 @@ def create_candlestick_chart_base64(df, date, interval_minutes, data_type, symbo
             max_price_threshold = max(10000, max_val * 2)  # Very permissive
             print(f"  Using mixed/permissive options thresholds: {min_price_threshold} to {max_price_threshold}")
     else:
-        # For cash/future data, use higher thresholds
-        min_price_threshold = 1000
-        max_price_threshold = 1000000
-        print(f"  Using cash/future thresholds: {min_price_threshold} to {max_price_threshold}")
+        # For cash/future data, use thresholds based on actual data range
+        min_price_threshold = max(0.01, min_val * 0.5)
+        max_price_threshold = max(1000000, max_val * 1.5)
+        print(f"  Using dynamic cash/future thresholds: {min_price_threshold:.2f} to {max_price_threshold:.2f}")
     
     # Filter out contaminated data before plotting
     print(f"DEBUG: Filtering contaminated data before plotting...")
@@ -1369,13 +1969,11 @@ def create_candlestick_chart_base64(df, date, interval_minutes, data_type, symbo
             ax.plot([i-0.3, i+0.3], [open_price, open_price], color=edge_color, linewidth=4, alpha=0.9)
     
             # Customize the plot with user-friendly names
-        display_names = {
-            'nifty_cash': 'Spot',
-            'nifty_future': 'Future',
-            'nifty_call': 'Call',
-            'nifty_put': 'Put'
-        }
-        data_type_display = display_names.get(data_type, data_type.replace('_', ' ').title())
+        data_type_display = 'Spot' if data_type.endswith('_cash') else \
+                           'Future' if data_type.endswith('_future') else \
+                           'Call' if data_type.endswith('_call') else \
+                           'Put' if data_type.endswith('_put') else \
+                           data_type.replace('_', ' ').title()
         
         symbol_display = symbol.upper() # For displaying NIFTY or BANKNIFTY
         
@@ -1421,7 +2019,7 @@ def create_candlestick_chart_base64(df, date, interval_minutes, data_type, symbo
             
             # Add some padding and ensure minimum range for visibility
             # For options data, use smaller padding since prices are typically small
-            if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
+            if data_type.endswith('_call') or data_type.endswith('_put'):
                 padding = max(price_range * 0.1, 0.5)  # 10% padding or minimum 0.5 points for options
             else:
                 padding = max(price_range * 0.1, 50)  # 10% padding or minimum 50 points for cash/future
@@ -1595,18 +2193,11 @@ def create_summary_chart_base64(df, date, data_type, symbol='nifty'):
     df_scaled['datetime'] = pd.to_datetime(df['date_readable'] + ' ' + df['time_readable'])
     df_scaled.set_index('datetime', inplace=True)
     
-    # Use user-friendly names for labels and title
-    display_names = {
-        'nifty_cash': 'Spot',
-        'nifty_future': 'Future',
-        'nifty_call': 'Call',
-        'nifty_put': 'Put',
-        'banknifty_cash': 'Spot',
-        'banknifty_future': 'Future',
-        'banknifty_call': 'Call',
-        'banknifty_put': 'Put'
-    }
-    data_type_display = display_names.get(data_type, data_type.replace('_', ' ').title())
+    data_type_display = 'Spot' if data_type.endswith('_cash') else \
+                       'Future' if data_type.endswith('_future') else \
+                       'Call' if data_type.endswith('_call') else \
+                       'Put' if data_type.endswith('_put') else \
+                       data_type.replace('_', ' ').title()
     
     symbol_display = symbol.upper() # For displaying NIFTY or BANKNIFTY
     
@@ -1725,6 +2316,18 @@ def single_chart():
         data_types = ['sensex_cash', 'sensex_future', 'sensex_call', 'sensex_put']
         if not data_type or not data_type.startswith('sensex_'):
             data_type = 'sensex_cash'
+    elif symbol == 'qqq':
+        data_types = ['qqq_cash', 'qqq_future', 'qqq_call', 'qqq_put']
+        if not data_type or not data_type.startswith('qqq_'):
+            data_type = 'qqq_cash'
+    elif symbol == 'spy':
+        data_types = ['spy_cash', 'spy_future', 'spy_call', 'spy_put']
+        if not data_type or not data_type.startswith('spy_'):
+            data_type = 'spy_cash'
+    elif symbol == 'spx':
+        data_types = ['spx_cash', 'spx_future', 'spx_call', 'spx_put']
+        if not data_type or not data_type.startswith('spx_'):
+            data_type = 'spx_cash'
     else:
         # Default to nifty
         symbol = 'nifty'
@@ -1757,6 +2360,7 @@ def generate_chart():
     data_type = request.form.get('data_type', 'nifty_cash')
     strike = request.form.get('strike')
     expiry = request.form.get('expiry')
+    data_source = request.form.get('data_source')
     
     # Get indicators from form data
     indicators = request.form.getlist('indicators') if request.form.get('indicators') else []
@@ -1776,6 +2380,12 @@ def generate_chart():
             symbol = 'midcpnifty'
         elif data_type.startswith('sensex_'):
             symbol = 'sensex'
+        elif data_type.startswith('qqq_'):
+            symbol = 'qqq'
+        elif data_type.startswith('spy_'):
+            symbol = 'spy'
+        elif data_type.startswith('spx_'):
+            symbol = 'spx'
         else:
             symbol = 'nifty'
     
@@ -1793,7 +2403,7 @@ def generate_chart():
         return jsonify({'error': 'Please select a date'})
     
     # For options, validate strike and expiry
-    if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
+    if data_type.endswith('_call') or data_type.endswith('_put'):
         if not strike:
             return jsonify({'error': 'Please select a strike price for options'})
         if not expiry:
@@ -1807,10 +2417,10 @@ def generate_chart():
         interval_minutes = 1
         print(f"Failed to convert timeframe '{timeframe}', using default: {interval_minutes}")
     
-    df = get_ohlc_data_for_date(date, data_type, strike, expiry, symbol)
+    df = get_ohlc_data_for_date(date, data_type, strike, expiry, symbol, data_source)
     if df is None:
         error_msg = f'No data found for date: {date} and data type: {data_type}'
-        if data_type in ['nifty_call', 'nifty_put'] or data_type in ['banknifty_call', 'banknifty_put']:
+        if data_type.endswith('_call') or data_type.endswith('_put'):
             error_msg += f', strike: {strike}, expiry: {expiry}'
         return jsonify({'error': error_msg})
     
@@ -1818,7 +2428,7 @@ def generate_chart():
         print(f"Processing candlestick chart with interval_minutes: {interval_minutes}")
         
         # Resample data to selected timeframe
-        df_resampled = resample_ohlc_data(df, interval_minutes, data_type)
+        df_resampled = resample_ohlc_data(df, interval_minutes, data_type, symbol)
         if df_resampled is None:
             return jsonify({'error': 'Failed to resample data for selected timeframe'})
         
@@ -1828,26 +2438,11 @@ def generate_chart():
         if chart_base64 is None:
             return jsonify({'error': 'Failed to generate candlestick chart'})
             
-        # Use user-friendly names for chart titles
-        display_names = {
-            'nifty_cash': 'Spot',
-            'nifty_future': 'Future',
-            'nifty_call': 'Call',
-            'nifty_put': 'Put',
-            'banknifty_cash': 'Spot',
-            'banknifty_future': 'Future',
-            'banknifty_call': 'Call',
-            'banknifty_put': 'Put',
-            'midcpnifty_cash': 'Spot',
-            'midcpnifty_future': 'Future',
-            'midcpnifty_call': 'Call',
-            'midcpnifty_put': 'Put',
-            'sensex_cash': 'Spot',
-            'sensex_future': 'Future',
-            'sensex_call': 'Call',
-            'sensex_put': 'Put'
-        }
-        data_type_display = display_names.get(data_type, data_type.replace('_', ' ').title())
+        data_type_display = 'Spot' if data_type.endswith('_cash') else \
+                           'Future' if data_type.endswith('_future') else \
+                           'Call' if data_type.endswith('_call') else \
+                           'Put' if data_type.endswith('_put') else \
+                           data_type.replace('_', ' ').title()
         if interval_minutes == 1:
             chart_title = f'Candlestick Chart - {date} ({data_type_display})'
         else:
@@ -1864,7 +2459,7 @@ def generate_chart():
         min_val = all_values.min()
         max_val = all_values.max()
         
-        if data_type in ['nifty_call', 'nifty_put', 'banknifty_call', 'banknifty_put', 'midcpnifty_call', 'midcpnifty_put', 'sensex_call', 'sensex_put']:
+        if data_type.endswith('_call') or data_type.endswith('_put'):
             # For options data, use flexible range based on actual values
             if max_val > 1000 and min_val > 100:  # All values are large (like call data)
                 min_price_threshold = 0.01
@@ -1921,25 +2516,11 @@ def generate_chart():
             return jsonify({'error': 'Failed to generate summary chart'})
             
         # Use user-friendly names for chart titles
-        display_names = {
-            'nifty_cash': 'Spot',
-            'nifty_future': 'Future',
-            'nifty_call': 'Call',
-            'nifty_put': 'Put',
-            'banknifty_cash': 'Spot',
-            'banknifty_future': 'Future',
-            'banknifty_call': 'Call',
-            'banknifty_put': 'Put',
-            'midcpnifty_cash': 'Spot',
-            'midcpnifty_future': 'Future',
-            'midcpnifty_call': 'Call',
-            'midcpnifty_put': 'Put',
-            'sensex_cash': 'Spot',
-            'sensex_future': 'Future',
-            'sensex_call': 'Call',
-            'sensex_put': 'Put'
-        }
-        data_type_display = display_names.get(data_type, data_type.replace('_', ' ').title())
+        data_type_display = 'Spot' if data_type.endswith('_cash') else \
+                       'Future' if data_type.endswith('_future') else \
+                       'Call' if data_type.endswith('_call') else \
+                       'Put' if data_type.endswith('_put') else \
+                       data_type.replace('_', ' ').title()
         chart_title = f'Summary Chart - {date} ({data_type_display})'
         
         # Calculate time frame information for summary charts too
@@ -1956,31 +2537,123 @@ def generate_chart():
     else:
         return jsonify({'error': 'Invalid chart type'})
 
-@app.route('/get_date_range')
+@app.route('/get_date_range', methods=['GET', 'OPTIONS'])
 def get_date_range_route():
     """API endpoint to get the date range for a specific data type and symbol"""
-    data_type = request.args.get('data_type', 'nifty_cash')
-    symbol = request.args.get('symbol', 'nifty')
-    print(f"=== GET_DATE_RANGE_ROUTE DEBUG ===")
-    print(f"  data_type: {data_type}")
-    print(f"  symbol: {symbol}")
-    
-    date_range = get_date_range(data_type, symbol)
-    print(f"  date_range result: {date_range}")
-    
-    if date_range is None:
-        print(f"  WARNING: date_range is None, returning error response")
-        return jsonify({'error': 'No date range found for the specified data type and symbol'})
-    
-    return jsonify({'date_range': date_range})
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'})
+        
+    try:
+        data_type = request.args.get('data_type', 'nifty_cash')
+        symbol = request.args.get('symbol', 'nifty')
+        data_source = request.args.get('data_source', '')
+        print(f"=== GET_DATE_RANGE_ROUTE DEBUG ===")
+        print(f"  data_type: {data_type}")
+        print(f"  symbol: {symbol}")
+        print(f"  data_source: {data_source}")
+        
+        if data_source == 'us_remote':
+            s = (symbol or '').lower()
+            if s in ['qqq', 'spy', 'spx']:
+                if (data_type.endswith('_cash') or data_type in [f'{s}_cash']):
+                    date_range = _us_remote_date_range(s)
+                    print(f"  us_remote cash date_range result: {date_range}")
+                    if date_range is None:
+                        return jsonify({'error': 'No parquet cash data found for the specified symbol'})
+                    return jsonify({'date_range': date_range})
+                if (data_type.endswith('_future') or data_type in [f'{s}_future']):
+                    date_range = _us_remote_future_date_range(s)
+                    print(f"  us_remote future date_range result: {date_range}")
+                    if date_range is None:
+                        return jsonify({'error': 'No parquet futures data found for the specified symbol'})
+                    return jsonify({'date_range': date_range})
+                if (data_type.endswith('_call') or data_type.endswith('_put') or data_type in [f'{s}_call', f'{s}_put']):
+                    kind = 'call' if (data_type.endswith('_call') or data_type == f'{s}_call') else 'put'
+                    date_range = _us_remote_option_date_range(s, kind)
+                    print(f"  us_remote options date_range result: {date_range}")
+                    if date_range is None:
+                        return jsonify({'error': 'No parquet options data found for the specified symbol'})
+                    return jsonify({'date_range': date_range})
+        
+        # Add timeout to prevent hanging
+        date_range = get_date_range(data_type, symbol)
+        print(f"  date_range result: {date_range}")
+        
+        if date_range is None:
+            print(f"  WARNING: date_range is None, returning error response")
+            return jsonify({'error': 'No date range found for the specified data type and symbol'})
+        
+        return jsonify({'date_range': date_range})
+    except Exception as e:
+        print(f"Error in get_date_range_route: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Backend error: {str(e)}'}), 500
 
 @app.route('/get_dates')
 def get_dates():
     """API endpoint to get available dates for a specific data type"""
-    data_type = request.args.get('data_type', 'nifty_cash')
-    symbol = request.args.get('symbol', 'nifty')
-    dates = get_available_dates(data_type, symbol)
-    return jsonify({'dates': dates})
+    try:
+        data_type = request.args.get('data_type', 'nifty_cash')
+        symbol = request.args.get('symbol', 'nifty')
+        data_source = request.args.get('data_source', '')
+        if data_source == 'us_remote':
+            s = (symbol or '').lower()
+            if s in ['qqq', 'spy', 'spx']:
+                if (data_type.endswith('_cash') or data_type in [f'{s}_cash']):
+                    dates = _list_us_remote_cash_dates(s)
+                    return jsonify({'dates': dates})
+                if (data_type.endswith('_future') or data_type in [f'{s}_future']):
+                    dates = _list_us_remote_future_dates(s)
+                    return jsonify({'dates': dates})
+                if (data_type.endswith('_call') or data_type.endswith('_put') or data_type in [f'{s}_call', f'{s}_put']):
+                    kind = 'call' if (data_type.endswith('_call') or data_type == f'{s}_call') else 'put'
+                    dates = _list_us_remote_option_dates(s, kind)
+                    return jsonify({'dates': dates})
+        dates = get_available_dates(data_type, symbol)
+        return jsonify({'dates': dates})
+    except Exception as e:
+        print(f"Error in get_dates: {e}")
+        return jsonify({'error': f'Backend error: {str(e)}'})
+
+@app.route('/debug_us_options_db')
+def debug_us_options_db():
+    """Debug endpoint for US MySQL options tables availability and date ranges."""
+    try:
+        symbol = request.args.get('symbol', 'qqq').lower()
+        if symbol not in ['qqq', 'spy', 'spx']:
+            return jsonify({'error': 'Symbol must be one of qqq, spy, spx'})
+        connection = get_db_connection(symbol=symbol)
+        if not connection:
+            return jsonify({'error': 'Failed to connect to US MySQL (ushistoricaldb)'})
+        cursor = connection.cursor()
+        cursor.execute("SELECT DATABASE()")
+        db_name = cursor.fetchone()[0]
+        # Determine tables
+        call_table = f"{symbol}_call"
+        put_table = f"{symbol}_put"
+        info = {'db': db_name, 'symbol': symbol, 'tables': {}}
+        for tbl in [call_table, put_table]:
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM {tbl}")
+                count = cursor.fetchone()[0]
+                # Min/max date
+                cursor.execute(f"SELECT MIN(date), MAX(date) FROM {tbl}")
+                dmin, dmax = cursor.fetchone()
+                info['tables'][tbl] = {
+                    'row_count': count,
+                    'min_date_int': dmin,
+                    'max_date_int': dmax,
+                    'min_date': convert_db_date_to_readable(dmin) if dmin else None,
+                    'max_date': convert_db_date_to_readable(dmax) if dmax else None,
+                }
+            except Exception as te:
+                info['tables'][tbl] = {'error': str(te)}
+        cursor.close()
+        connection.close()
+        return jsonify(info)
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 @app.route('/get_strikes')
 def get_strikes():
@@ -2079,7 +2752,7 @@ def test_expiry_data():
     symbol = request.args.get('symbol', 'nifty')
     
     try:
-        connection = get_db_connection()
+        connection = get_db_connection(symbol=symbol)
         cursor = connection.cursor()
         db_date = convert_date_to_db_format(date)
         
@@ -2088,6 +2761,18 @@ def test_expiry_data():
             'nifty': {
                 'call_table': 'nifty_call',
                 'put_table': 'nifty_put'
+            },
+            'qqq': {
+                'call_table': 'qqq_call',
+                'put_table': 'qqq_put'
+            },
+            'spy': {
+                'call_table': 'spy_call',
+                'put_table': 'spy_put'
+            },
+            'spx': {
+                'call_table': 'spx_call',
+                'put_table': 'spx_put'
             }
         }
         
@@ -2215,6 +2900,8 @@ def get_straddle_strikes():
     """Get available call and put strikes for a specific date and symbol"""
     date = request.args.get('date')
     symbol = request.args.get('symbol', 'nifty')
+    if (symbol or '').lower() in {'qqq', 'spy', 'spx'}:
+        return jsonify({'error': 'US symbols are not supported in straddle chart'})
     
     if not date:
         return jsonify({'error': 'Date is required'})
@@ -2244,7 +2931,7 @@ def get_straddle_strikes():
         call_table = symbol_tables['call_table']
         put_table = symbol_tables['put_table']
         
-        connection = get_db_connection()
+        connection = get_db_connection(symbol=symbol)
         cursor = connection.cursor()
         db_date = convert_date_to_db_format(date)
         
@@ -2275,6 +2962,8 @@ def get_straddle_expiries():
     call_strike = request.args.get('call_strike')
     put_strike = request.args.get('put_strike')
     symbol = request.args.get('symbol', 'nifty')
+    if (symbol or '').lower() in {'qqq', 'spy', 'spx'}:
+        return jsonify({'error': 'US symbols are not supported in straddle chart'})
     
     print(f"=== GET_STRADDLE_EXPIRIES DEBUG ===")
     print(f"Received parameters:")
@@ -2351,7 +3040,7 @@ def get_straddle_expiries():
         if not common_expiries:
             print("No common expiries found, trying alternative approach...")
             # Get all expiries for the date regardless of strike
-            connection = mysql.connector.connect(**DB_CONFIG)
+            connection = get_db_connection(symbol=symbol)
             cursor = connection.cursor()
             
             # Get all expiries for the date
@@ -2382,9 +3071,11 @@ def get_straddle_expiries():
 def get_straddle_dates():
     """API endpoint to get available dates for straddle strategy (intersection of call and put)"""
     symbol = request.args.get('symbol', 'nifty')
+    if (symbol or '').lower() in {'qqq', 'spy', 'spx'}:
+        return jsonify({'error': 'US symbols are not supported in straddle chart'})
     
     try:
-        connection = get_db_connection()
+        connection = get_db_connection(symbol=symbol)
         cursor = connection.cursor()
         
         # Use our optimized get_available_dates function instead of direct queries
@@ -2431,6 +3122,8 @@ def generate_straddle_chart():
     """Generate straddle chart based on selected parameters"""
     date = request.form.get('date')
     symbol = request.form.get('symbol', 'nifty')
+    if (symbol or '').lower() in {'qqq', 'spy', 'spx'}:
+        return jsonify({'error': 'US symbols are not supported in straddle chart'})
     call_strike = request.form.get('callStrike')  # Fixed: match HTML form field name
     put_strike = request.form.get('putStrike')    # Fixed: match HTML form field name
     expiry = request.form.get('expiry')
@@ -3782,7 +4475,7 @@ def create_iv_skew_chart_base64(options_chain, underlying_price, expiry_date, sy
 def get_underlying_asset_price(date, symbol='nifty'):
     """Get the current underlying asset price (spot price) from cash tables"""
     try:
-        connection = get_db_connection()
+        connection = get_db_connection(symbol=symbol)
         if not connection:
             print("Failed to connect to database for underlying price")
             return None
@@ -3801,7 +4494,10 @@ def get_underlying_asset_price(date, symbol='nifty'):
             'nifty': 'nifty_cash',
             'banknifty': 'banknifty_cash', 
             'midcpnifty': 'midcpnifty_cash',
-            'sensex': 'sensex_cash'
+            'sensex': 'sensex_cash',
+            'qqq': 'qqq_cash',
+            'spy': 'spy_cash',
+            'spx': 'spx_cash'
         }
         
         cash_table = cash_table_map.get(symbol, 'nifty_cash')
@@ -3847,8 +4543,8 @@ def validate_options_chain_inputs(date, symbol, expiry=None):
         datetime.strptime(date, '%Y-%m-%d')
         
         # Validate symbol
-        valid_symbols = ['nifty', 'banknifty', 'midcpnifty', 'sensex']
-        if symbol not in valid_symbols:
+        valid_symbols = ['nifty', 'banknifty', 'midcpnifty', 'sensex', 'qqq', 'spy', 'spx']
+        if symbol.lower() not in valid_symbols:
             raise ValueError(f"Invalid symbol: {symbol}")
         
         # Validate expiry if provided
@@ -3882,7 +4578,7 @@ def validate_option_data(row):
 def get_available_times_for_date(date, symbol, table_name):
     """Get all available times for a specific date from database"""
     try:
-        connection = get_db_connection()
+        connection = get_db_connection(symbol=symbol)
         if not connection:
             return []
         
@@ -3955,14 +4651,17 @@ def get_options_chain_data():
             'nifty': {'call_table': 'nifty_call', 'put_table': 'nifty_put'},
             'banknifty': {'call_table': 'banknifty_call', 'put_table': 'banknifty_put'},
             'midcpnifty': {'call_table': 'midcpnifty_call', 'put_table': 'midcpnifty_put'},
-            'sensex': {'call_table': 'sensex_call', 'put_table': 'sensex_put'}
+            'sensex': {'call_table': 'sensex_call', 'put_table': 'sensex_put'},
+            'qqq': {'call_table': 'qqq_call', 'put_table': 'qqq_put'},
+            'spy': {'call_table': 'spy_call', 'put_table': 'spy_put'},
+            'spx': {'call_table': 'spx_call', 'put_table': 'spx_put'}
         }
         
         symbol_tables = table_map.get(symbol, table_map['nifty'])
         call_table = symbol_tables['call_table']
         put_table = symbol_tables['put_table']
         
-        connection = get_db_connection()
+        connection = get_db_connection(symbol=symbol)
         if not connection:
             return jsonify({'error': 'Failed to connect to database'})
         
